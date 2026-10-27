@@ -61,7 +61,7 @@ fn stdout_failed(e: std::io::Error) {
 }
 
 const HELP: &str = "\
-filmcraft-cli: drive FilmCraft from the shell (headless engine, or the live app with --bridge)
+vibezcut-cli: drive VibezCut from the shell (headless engine, or the live app with --bridge)
 
 USAGE
   filmcraft-cli [OPTIONS] <SUBCOMMAND> [ARGS]
@@ -307,7 +307,7 @@ async fn cli() {
     }
     // `--version` anywhere and `-V` as the subcommand, also after global options (`--demo --version`, #710).
     if a.wants_version() {
-        outln!("filmcraft-cli {}", env!("CARGO_PKG_VERSION"));
+        outln!("vibezcut-cli {} ({})", filmcraft_engine::vibezcut::VERSION, filmcraft_engine::vibezcut::BASED_ON);
         return;
     }
     register_hardware_decoders();

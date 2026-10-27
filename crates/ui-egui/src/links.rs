@@ -11,18 +11,18 @@ pub const DISCORD: &str = "https://discord.gg/artcraft";
 /// The ArtCraft website.
 pub const WEBSITE: &str = "https://getartcraft.com";
 /// FilmCraft's page on the ArtCraft website.
-pub const APP_PAGE: &str = "https://getartcraft.com/apps/filmcraft";
+pub const APP_PAGE: &str = "https://github.com/zainulabedeen123/VibezCut";
 /// FilmCraft's source repository.
 pub const GITHUB: &str = "https://github.com/storytold/filmcraft";
 /// New issue on FilmCraft's repository.
-pub const ISSUES: &str = "https://github.com/storytold/filmcraft/issues";
+pub const ISSUES: &str = "https://github.com/zainulabedeen123/VibezCut/issues";
 
 /// (command id, label, url) for every link, in menu order.
 pub const ALL: [(&str, &str, &str); 5] = [
     ("help.discord", "Join the ArtCraft Discord…", DISCORD),
     ("help.website", "ArtCraft Website", WEBSITE),
-    ("help.appPage", "FilmCraft on getartcraft.com", APP_PAGE),
-    ("help.github", "FilmCraft on GitHub", GITHUB),
+    ("help.appPage", "VibezCut on GitHub", APP_PAGE),
+    ("help.github", "Built on FilmCraft (GitHub)", GITHUB),
     ("help.reportIssue", "Report an Issue…", ISSUES),
 ];
 
@@ -49,7 +49,7 @@ pub fn menu_hint(command: &str) -> Option<String> {
         match command {
             "help.revealLogFiles" => tl!("Saves this session's log and shows it in your file manager."),
             "help.systemCompatibilityReport" => tl!("Shows a report on this computer."),
-            "app.about" => tl!("Shows the version, community links and credits in a FilmCraft window."),
+            "app.about" => tl!("Shows the version, community links and credits in a VibezCut window."),
             _ => return None,
         }
         .to_string(),

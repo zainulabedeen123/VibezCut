@@ -7,8 +7,9 @@
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=../../assets/app-icon/filmcraft.ico");
+    println!("cargo:rerun-if-changed=../../assets/app-icon/vibezcut.ico");
     println!("cargo:rerun-if-env-changed=FILMCRAFT_REQUIRE_WINRES");
+    println!("cargo:rerun-if-env-changed=VIBEZCUT_VERSION");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
         return;
     }
@@ -19,12 +20,17 @@ fn main() {
 mod windows {
     pub fn embed_resources() {
         let mut res = winresource::WindowsResource::new();
-        res.set_icon("../../assets/app-icon/filmcraft.ico")
-            .set("ProductName", "FilmCraft")
-            .set("FileDescription", "FilmCraft video editor")
-            .set("LegalCopyright", "Copyright (c) the FilmCraft contributors. MIT OR Apache-2.0.")
-            .set("OriginalFilename", "filmcraft.exe")
-            .set("InternalName", "filmcraft");
+        res.set_icon("../../assets/app-icon/vibezcut.ico")
+            .set("ProductName", "VibezCut")
+            .set("FileDescription", "VibezCut video editor")
+            .set("CompanyName", "VibezCut")
+            .set("LegalCopyright", "VibezCut, built on FilmCraft (c) the FilmCraft contributors. MIT OR Apache-2.0.")
+            .set("OriginalFilename", "VibezCut.exe")
+            .set("InternalName", "vibezcut");
+        let version = std::env::var("VIBEZCUT_VERSION").unwrap_or_default();
+        if !version.is_empty() {
+            res.set("ProductVersion", &version);
+        }
         if let Err(e) = res.compile() {
             if std::env::var_os("FILMCRAFT_REQUIRE_WINRES").is_some() {
                 panic!("embedding Windows resources failed: {e}");

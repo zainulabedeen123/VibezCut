@@ -27,23 +27,33 @@ def settings() -> dict:
     return s
 
 
+APP_NAMES = ("VibezCut.exe", "filmcraft.exe")
+CLI_NAMES = ("vibezcut-cli.exe", "filmcraft-cli.exe")
+
+
+def _first(folder: Path, names) -> Path | None:
+    return next((folder / n for n in names if (folder / n).exists()), None)
+
+
 def home() -> Path:
+    """Folder with the editor binaries: studio.json / FILMCRAFT_HOME, else the release zip's root
+    (binaries next to studio/), else this repo's own release build."""
     h = settings()["filmcraft_home"]
     if h:
         return Path(h)
-    for cand in (REPO / "target" / "release", REPO / "dist"):
-        if (cand / "filmcraft-cli.exe").exists():
+    for cand in (REPO, REPO / "target" / "x86_64-pc-windows-msvc" / "release", REPO / "target" / "release", REPO / "dist"):
+        if _first(cand, CLI_NAMES):
             return cand
-    raise FileNotFoundError("FilmCraft binaries not found: build the repo (cargo build --release) "
+    raise FileNotFoundError("VibezCut binaries not found: build the repo (cargo build --release) "
                             'or set {"filmcraft_home": "..."} in studio/studio.json')
 
 
 def cli() -> Path:
-    return home() / "filmcraft-cli.exe"
+    return _first(home(), CLI_NAMES) or home() / CLI_NAMES[0]
 
 
 def app() -> Path:
-    return home() / "filmcraft.exe"
+    return _first(home(), APP_NAMES) or home() / APP_NAMES[0]
 
 
 def control_port() -> int:

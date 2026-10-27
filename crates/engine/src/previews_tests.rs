@@ -216,7 +216,7 @@ fn previews_survive_save_and_open() {
     let path = folder.join("Film.fcproj").to_string_lossy().to_string();
     s.execute("file.save", json!({"path": path})).unwrap();
     // the unsaved project's previews moved next to the project
-    assert_eq!(s.previews.dir().unwrap(), folder.join("FilmCraft Previews").join("Film"));
+    assert_eq!(s.previews.dir().unwrap(), folder.join("VibezCut Previews").join("Film"));
     assert_eq!(states(&s), vec!["green", "none"]);
     let mut t = Session::default();
     t.execute("file.open", json!({"path": path})).unwrap();

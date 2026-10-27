@@ -354,7 +354,7 @@ fn project_scratch_folders_outside_the_project_are_not_used() {
         s.drain_events().iter().any(|e| matches!(e, crate::Event::Toast { message, .. } if message.contains(&named))),
         "the user is told the folder is not used"
     );
-    assert_eq!(crate::project_tools::previews_dir(&s), Some(show.join("FilmCraft Previews").join("cut")));
+    assert_eq!(crate::project_tools::previews_dir(&s), Some(show.join("VibezCut Previews").join("cut")));
     s.execute("sequence.addEdit", json!({"seconds": 1.0})).unwrap();
     let r = s.execute("file.autoSaveNow", json!({})).unwrap();
     let written = std::path::PathBuf::from(r["path"].as_str().unwrap());

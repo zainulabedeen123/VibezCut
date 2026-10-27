@@ -1,0 +1,88 @@
+name: VibezCut release (Windows)
+
+# Tag a version to publish a release:   git tag v0.1.0 && git push origin v0.1.0
+# Or run it by hand (Actions > VibezCut release > Run workflow) to get a build artifact only.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version label for a manual build (no release is published)"
+        required: false
+        default: "0.0.0-manual"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vibezcut-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: ver
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}".TrimStart('v') } else { $v = "${{ inputs.version }}" }
+          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Output "VibezCut $v"
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: vibezcut-windows-x64
+
+      - name: Build and package
+        shell: pwsh
+        env:
+          VIBEZCUT_VERSION: ${{ steps.ver.outputs.version }}
+          FILMCRAFT_BUILD_SHA: ${{ github.sha }}
+        run: pwsh packaging/vibezcut/package.ps1 -Version $env:VIBEZCUT_VERSION
+
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          $dir = Get-ChildItem dist/vibezcut -Directory | Select-Object -First 1
+          & "$($dir.FullName)\vibezcut-cli.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw "vibezcut-cli --version failed" }
+
+      - name: Smoke test (headless render)
+        continue-on-error: true   # hosted runners have no GPU; the CPU path should still render
+        shell: pwsh
+        run: |
+          $dir = Get-ChildItem dist/vibezcut -Directory | Select-Object -First 1
+          & "$($dir.FullName)\vibezcut-cli.exe" --demo render --seconds 1 --out smoke.png --scale 0.25
+          if ($LASTEXITCODE -ne 0) { throw "headless render failed" }
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VibezCut-${{ steps.ver.outputs.version }}-windows-x64
+          path: |
+            dist/vibezcut/*.zip
+            dist/vibezcut/*.sha256
+
+      - name: Publish GitHub release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VibezCut ${{ steps.ver.outputs.version }}
+          files: |
+            dist/vibezcut/*.zip
+            dist/vibezcut/*.sha256
+          generate_release_notes: true

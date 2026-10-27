@@ -51,6 +51,18 @@ Start the editor with **`Start VibezCut (Claude control).bat`** (drag a `.fcproj
 It makes a fresh 64-hex token per session, keeps it only in `%USERPROFILE%\.filmcraft-studio\control.token`
 and starts the editor with `--control 9876` (loopback only). The MCP server reads the token there.
 
+## Builds and releases
+
+- Local: `pwsh packaging/vibezcut/package.ps1 -Version 0.1.0` builds `VibezCut.exe` and
+  `vibezcut-cli.exe` (static CRT) and writes `dist/vibezcut/VibezCut-<version>-windows-x64.zip`
+  (+ `.sha256`): editor, CLI, launcher, `studio/`, docs, the Claude skill and the licenses.
+- CI: `.github/workflows/vibezcut-release.yml`. Push a tag (`git tag v0.1.0 && git push origin v0.1.0`)
+  and GitHub Actions builds on Windows, smoke-tests the CLI and publishes a GitHub Release with the zip.
+  "Run workflow" by hand gives a build artifact without a release.
+- Branding lives in `crates/engine/src/vibezcut.rs` (name, version, data folder) and
+  `assets/app-icon/vibezcut*`. Internal ids, the `.fcproj` format and interchange tags keep their
+  FilmCraft names so projects stay compatible. Settings and auto-save go to `%APPDATA%\VibezCut`.
+
 ## Upstream
 
 `upstream` = storytold/filmcraft (push disabled). Our `main` started at their `v0.13.0` release.
