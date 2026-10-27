@@ -297,14 +297,16 @@ _packs: dict = {}
 @mcp.tool()
 def fc_pack(out_dir: str, include_media: bool = False, proxy_preset: str = "h264_half", notes: str = "",
             extras: list[str] | None = None, download_urls: dict | None = None, name: str = "",
-            save_first: bool = False, overwrite: bool = False, make_zip: bool = True, wait: bool = True) -> dict:
+            save_first: bool = False, overwrite: bool = False, make_zip: bool = True, keep_folder: bool = False,
+            wait: bool = True) -> dict:
     """Pack the open project to send to an editor: <out_dir>/<name>/ (and <name>.zip) with the project
     (RELATIVE media paths, so it opens wherever it is unpacked), proxies, and a handoff/ folder
     (HANDOFF.md, manifest.json, extras such as the script or cut report). include_media=False (default)
     leaves the big full-resolution files out: the editor downloads them into media/ (download_urls maps
     file name -> link, shown in HANDOFF.md). proxy_preset: h264_half | h264_quarter | prores_proxy_half…
     ("" = no proxies). notes: free text for HANDOFF.md (title, sponsor, what to do next).
-    The project must be saved (save_first=True saves it). Proxies of long footage take a while:
+    The result is the zip; the media is streamed into it, so the disk needs room for one copy (keep_folder=True also
+    leaves the unpacked folder). It refuses early when the drive lacks space. The project must be saved (save_first=True saves it). Proxies of long footage take a while:
     wait=False returns a job id at once, follow it with fc_pack_status."""
     c = _client("live")
     _, pname, path, dirty = _open_project(c)
@@ -322,7 +324,7 @@ def fc_pack(out_dir: str, include_media: bool = False, proxy_preset: str = "h264
         try:
             st["result"] = pack.pack(path, out_dir, make_client=fc.Live, include_media=include_media, proxy_preset=proxy_preset,
                                      name=name, notes=notes, extras=extras, download_urls=download_urls, make_zip=make_zip,
-                                     overwrite=overwrite, progress=lambda step, d="": st.update(step=step, detail=d))
+                                     keep_folder=keep_folder, overwrite=overwrite, progress=lambda step, d="": st.update(step=step, detail=d))
             st["state"] = "done"
         except Exception as e:  # reported by fc_pack_status
             st.update(state="error", error=str(e))
@@ -333,6 +335,21 @@ def fc_pack(out_dir: str, include_media: bool = False, proxy_preset: str = "h264
         t.join()
         return st.get("result") or {"error": st.get("error", "pack failed")}
     return {"job": job, "note": "running in the background: fc_pack_status(job) shows progress"}
+
+
+@mcp.tool()
+def fc_preflight() -> dict:
+    """Check the open (saved) project for things that make an export fail or crash VibezCut: missing
+    files and oversized images (a 16000 px PNG needs ~2 GB to export and aborts the app). Run it
+    before an export or fc_pack."""
+    def go():
+        c = _client("live")
+        _, pname, path, dirty = _open_project(c)
+        if not path:
+            raise fc.FilmCraftError(f"'{pname}' was never saved to a file: save it first.")
+        issues = pack.preflight(path)
+        return {"project": path, "unsaved_changes": dirty, "ok": not issues, "issues": issues}
+    return _safe(go)
 
 
 @mcp.tool()

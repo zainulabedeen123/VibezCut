@@ -138,6 +138,71 @@ def find_font_files(family: str) -> list[Path]:
     return found
 
 
+
+_IMG_EXT = {".png", ".jpg", ".jpeg", ".gif", ".bmp"}
+BIG_IMAGE_PIXELS = 40_000_000  # ~7000 x 5600: decoded as 32-bit float RGBA it needs ~640 MB, and VibezCut keeps it whole
+
+
+_PNG_SIG = bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+_SOF = {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}
+
+
+def image_size(path: Path) -> tuple[int, int] | None:
+    """(width, height) of a PNG / JPEG / GIF / BMP from its header (no image library needed)."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(32)
+            if head[:8] == _PNG_SIG:
+                return int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")
+            if head[:6] in (b"GIF87a", b"GIF89a"):
+                return int.from_bytes(head[6:8], "little"), int.from_bytes(head[8:10], "little")
+            if head[:2] == b"BM":
+                return int.from_bytes(head[18:22], "little"), abs(int.from_bytes(head[22:26], "little", signed=True))
+            if head[:2] == bytes([0xFF, 0xD8]):  # JPEG: walk the segments to the start-of-frame marker
+                f.seek(2)
+                while True:
+                    b = f.read(1)
+                    while b and b[0] != 0xFF:
+                        b = f.read(1)
+                    m = f.read(1)
+                    while m and m[0] == 0xFF:
+                        m = f.read(1)
+                    if not m:
+                        return None
+                    if m[0] in _SOF:
+                        seg = f.read(7)
+                        return int.from_bytes(seg[5:7], "big"), int.from_bytes(seg[3:5], "big")
+                    if m[0] == 0x01 or 0xD0 <= m[0] <= 0xD9:
+                        continue
+                    n = int.from_bytes(f.read(2), "big")
+                    f.seek(n - 2, 1)
+    except OSError:
+        return None
+    return None
+
+
+def preflight(project_path: str | Path) -> list[dict]:
+    """Problems that make an export fail or crash VibezCut, found without opening the project."""
+    src = Path(project_path)
+    doc = json.loads(src.read_text(encoding="utf-8"))
+    issues = []
+    for iid, it in _media_items(doc):
+        path = _file_path(it["kind"]["Media"].get("media"))
+        if not path:
+            continue
+        p = _resolve(path, src.parent)
+        if not p.exists():
+            issues.append({"level": "error", "file": p.name, "problem": "file is missing"})
+            continue
+        if p.suffix.lower() in _IMG_EXT:
+            wh = image_size(p)
+            if wh and wh[0] * wh[1] > BIG_IMAGE_PIXELS:
+                gb = wh[0] * wh[1] * 16 / 1e9
+                issues.append({"level": "error", "file": p.name, "problem": f"image is {wh[0]}x{wh[1]} px: it needs ~{gb:.1f} GB of memory "
+                               "to export and can crash VibezCut. Replace it with a smaller copy (4096 px on the long side is plenty for 4K)."})
+    return issues
+
+
 def _walk_strings(o):
     if isinstance(o, dict):
         for v in o.values():
@@ -173,9 +238,11 @@ def inspect_project(project_path: str | Path) -> dict:
 
 # ----------------------------------------------------------------------------- pack
 def pack(project_path, out_dir, *, make_client=None, include_media=False, proxy_preset="h264_half", name="",
-         notes="", extras=None, download_urls=None, make_zip=True, overwrite=False, progress=None) -> dict:
-    """Build the pack folder (and zip). ``make_client`` returns a connection used to make the proxies
-    (not needed when ``proxy_preset`` is empty and the project already has proxies)."""
+         notes="", extras=None, download_urls=None, make_zip=True, keep_folder=False, overwrite=False, progress=None) -> dict:
+    """Build the pack (a zip, and with ``keep_folder`` also the unpacked folder). ``make_client`` returns a
+    connection used to make the proxies (not needed when ``proxy_preset`` is empty and the project already
+    has proxies). Without ``keep_folder`` the full-resolution media is streamed straight into the zip, so
+    the disk needs room for ONE copy, not two."""
     say = progress or (lambda *_: None)
     src = Path(project_path)
     if not src.is_file():
@@ -200,6 +267,18 @@ def pack(project_path, out_dir, *, make_client=None, include_media=False, proxy_
         path = _file_path(m.get("media"))
         if path:
             real.append((iid, it, m, _resolve(path, base)))
+
+    # --- is there room? (media is copied once into the zip, twice when the folder is kept too)
+    stream = make_zip and not keep_folder
+    media_bytes = sum(p.stat().st_size for _, _, _, p in real if p.exists())
+    need_bytes = int(media_bytes * ((1 if stream else 2 if make_zip else 1) if include_media else 0)
+                     + (0.3 * media_bytes if proxy_preset else 0) * (1 if stream else 2 if make_zip else 1) + 256e6)
+    free = shutil.disk_usage(Path(out_dir)).free
+    if free < need_bytes:
+        shutil.rmtree(root, ignore_errors=True)  # the empty folders this call just made
+        raise fc.FilmCraftError(f"not enough free space in {Path(out_dir).anchor or out_dir}: the pack needs about {_gb(need_bytes)} and "
+                                f"{_gb(free)} is free. Pack to another drive, or leave the full-resolution media out (include_media=False).")
+    streamed: dict[str, Path] = {}
 
     # --- proxies: reuse attached ones, make the rest next to the pack (the open project is not touched)
     proxies: dict[str, Path] = {}
@@ -252,7 +331,10 @@ def pack(project_path, out_dir, *, make_client=None, include_media=False, proxy_
         size = p.stat().st_size if p.exists() else ident.get("size")
         included = False
         if include_media:
-            if p.exists():
+            if p.exists() and stream:
+                streamed[rel] = p  # goes into the zip straight from where it is
+                included, copied = True, copied + size
+            elif p.exists():
                 say("media", f"copying {p.name} ({_gb(size)})")
                 shutil.copyfile(p, root / rel)
                 if (root / rel).stat().st_size != size:
@@ -273,6 +355,9 @@ def pack(project_path, out_dir, *, make_client=None, include_media=False, proxy_
                         "download_url": urls.get(p.name) or urls.get(it.get("name") or "") or None})
     if not real:
         warnings.append("the project has no media files")
+
+    for issue in preflight(src):
+        warnings.append(f"{issue['file']}: {issue['problem']}")
 
     # --- anything else that still points at this computer
     external = sorted({s for s in _walk_strings(doc) if _ABS.match(s)})
@@ -327,12 +412,23 @@ def pack(project_path, out_dir, *, make_client=None, include_media=False, proxy_
     if make_zip:
         say("zip", "writing the zip")
         zp = Path(out_dir) / f"{pname}.zip"
-        with zipfile.ZipFile(zp, "w", allowZip64=True) as z:
-            for f in sorted(root.rglob("*")):
-                if f.is_file():
-                    big = f.suffix.lower() in {".mp4", ".mov", ".mkv", ".mxf", ".wav", ".mp3", ".m4a", ".aac", ".webm", ".avi"}
-                    z.write(f, Path(pname) / f.relative_to(root), compress_type=zipfile.ZIP_STORED if big else zipfile.ZIP_DEFLATED)
+        stored = {".mp4", ".mov", ".mkv", ".mxf", ".wav", ".mp3", ".m4a", ".aac", ".webm", ".avi", ".jpg", ".jpeg", ".png", ".flac", ".ogg"}
+        try:
+            with zipfile.ZipFile(zp, "w", allowZip64=True) as z:
+                for f in sorted(root.rglob("*")):
+                    if f.is_file():
+                        z.write(f, Path(pname) / f.relative_to(root),
+                                compress_type=zipfile.ZIP_STORED if f.suffix.lower() in stored else zipfile.ZIP_DEFLATED)
+                for rel, srcp in streamed.items():
+                    say("zip", f"adding {srcp.name}")
+                    z.write(srcp, Path(pname) / rel, compress_type=zipfile.ZIP_STORED if srcp.suffix.lower() in stored else zipfile.ZIP_DEFLATED)
+        except BaseException:  # a half-written zip is worse than none
+            zp.unlink(missing_ok=True)
+            raise
         result.update(zip=str(zp), zip_size=_gb(zp.stat().st_size))
+        if not keep_folder:
+            shutil.rmtree(root, ignore_errors=True)  # the staging folder this call made: only the zip is the deliverable
+            result.pop("pack_dir"), result.pop("project")
     if not include_media:
         result["next"] = (f"The full-resolution media ({_gb(total)}) is NOT in the pack. The editor puts these files in the "
                           "'media' folder next to the project (or runs fc_relink on the folder they downloaded to).")

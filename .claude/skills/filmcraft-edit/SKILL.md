@@ -24,8 +24,12 @@ Full rules: `docs/vibezcut/WORKFLOW.md` in the VibezCut repo. House style: `stud
 8. Open it in VibezCut with `fc_open(path)` (or tell the user to open the .fcproj).
 
 ## Handoff packs (sending a project to an editor, or receiving one)
+- **Before an export or a pack** run `fc_preflight()`: a very large image (e.g. a 16000 px PNG logo) needs ~2 GB to
+  export and aborts VibezCut. Replace it with a smaller copy (`ffmpeg -i big.png -vf scale=3840:-2 small.png`, then
+  Replace Footage) before going on.
 - **Sending**: the user asks to pack/send it. The project must be saved. `fc_pack(out_dir, notes=..., extras=[script,
-  cut report, units.json…], download_urls={file: link})` writes `<out_dir>/<name>/` and `<name>.zip`: the project with
+  cut report, units.json…], download_urls={file: link})` writes `<out_dir>/<name>.zip` (media is streamed into it: one
+  copy on disk; `keep_folder=True` also leaves the folder; it refuses early if the drive lacks space): the project with
   relative media paths, proxies, and `handoff/` (HANDOFF.md, manifest.json). Default `include_media=False`: the big
   full-resolution files stay out; tell the user which ones the editor must download into `media/`. Long footage:
   `wait=False` then `fc_pack_status(job)`. Put in `notes` what the editor needs: sponsor, what is done, what is next.
