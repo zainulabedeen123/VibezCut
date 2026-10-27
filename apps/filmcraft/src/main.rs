@@ -36,6 +36,8 @@ mod graphics;
 mod logging;
 #[cfg(target_os = "macos")]
 mod native_menu;
+#[cfg(windows)]
+mod updater;
 mod window_raise;
 
 use args::{Cli, Launch};
@@ -78,6 +80,9 @@ fn tell(text: &str, error: bool) {
 }
 
 fn main() -> eframe::Result {
+    // VibezCut installer / updater hooks: before anything else, they may exit or restart the process.
+    #[cfg(windows)]
+    updater::startup();
     // First, so the panic hook and every start-up record are logged (`logging`).
     let logger = logging::install();
     // lossy, so a value that is not Unicode is reported like any other bad port instead of ignored
@@ -113,6 +118,8 @@ fn main() -> eframe::Result {
         }
     }
     app_nap::disable();
+    #[cfg(windows)]
+    updater::start(data_root.clone());
     #[cfg(target_os = "linux")]
     dev_icon::ensure_dev_desktop_entry();
     // Panics anywhere go to <data dir>/Logs/crash-<day>.log with a backtrace; the UI pass and

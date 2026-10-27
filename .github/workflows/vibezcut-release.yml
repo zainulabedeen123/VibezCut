@@ -70,6 +70,22 @@ jobs:
           & "$($dir.FullName)\vibezcut-cli.exe" --demo render --seconds 1 --out smoke.png --scale 0.25
           if ($LASTEXITCODE -ne 0) { throw "headless render failed" }
 
+      - name: Velopack installer and update packages
+        shell: pwsh
+        env:
+          VER: ${{ steps.ver.outputs.version }}
+        run: |
+          dotnet tool install -g vpk --version 1.3.39-g8d2844f
+          $stage = (Get-ChildItem dist/vibezcut -Directory | Select-Object -First 1).FullName
+          if ("${{ github.ref_type }}" -eq "tag") {
+            # the previous release, so vpk can build a delta update and extend the release feed
+            vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} -o vpk
+            if ($LASTEXITCODE -ne 0) { Write-Output "no previous Velopack release (first one): full package only" }
+          }
+          vpk pack -u VibezCut -v $env:VER -p $stage -e VibezCut.exe -i assets/app-icon/vibezcut.ico --packTitle VibezCut --packAuthors VibezCut -o vpk
+          if ($LASTEXITCODE -ne 0) { throw "vpk pack failed" }
+          Get-ChildItem vpk | Format-Table Name, Length
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -77,13 +93,20 @@ jobs:
           path: |
             dist/vibezcut/*.zip
             dist/vibezcut/*.sha256
+            vpk/*
 
-      - name: Publish GitHub release
+      - name: Publish GitHub release (installer + update feed)
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        run: |
+          vpk upload github --repoUrl https://github.com/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }} --tag ${{ github.ref_name }} --releaseName "VibezCut ${{ steps.ver.outputs.version }}" --publish -o vpk
+          if ($LASTEXITCODE -ne 0) { throw "vpk upload failed" }
+
+      - name: Attach the portable zip to the release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
-          name: VibezCut ${{ steps.ver.outputs.version }}
+          tag_name: ${{ github.ref_name }}
           files: |
             dist/vibezcut/*.zip
             dist/vibezcut/*.sha256
-          generate_release_notes: true

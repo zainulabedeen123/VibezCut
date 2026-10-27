@@ -44,6 +44,7 @@ const MAX_THUMB_TEXTURES: usize = 512;
 
 pub mod frames;
 pub mod graphics_notice;
+pub mod update_notice;
 pub mod header;
 pub mod i18n;
 pub mod icons;
@@ -2221,6 +2222,7 @@ impl eframe::App for FilmcraftApp {
             // a broken notice must not take the session down: drop it
             self.graphics_notice = None;
         }
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| update_notice::show(self, ui.ctx())));
         let ctx = ui.ctx().clone();
         self.last_ui_time = ctx.input(|i| i.time);
         if !self.synthetic.is_empty() {

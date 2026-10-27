@@ -59,6 +59,13 @@ and starts the editor with `--control 9876` (loopback only). The MCP server read
 - CI: `.github/workflows/vibezcut-release.yml`. Push a tag (`git tag vibezcut-v0.1.0 && git push origin vibezcut-v0.1.0`; plain `v*` tags are FilmCraft's)
   and GitHub Actions builds on Windows, smoke-tests the CLI and publishes a GitHub Release with the zip.
   "Run workflow" by hand gives a build artifact without a release.
+- Installer and auto-update (Velopack): CI also runs `vpk pack` and `vpk upload github`, so every
+  release carries `VibezCut-win-Setup.exe`, the full/delta `.nupkg` packages and the
+  `releases.win.json` feed. Installed copies (`%LocalAppData%\VibezCut\current`) check the GitHub
+  Releases at start (`apps/filmcraft/src/updater.rs`), download in the background and show
+  "Restart to update" (`crates/ui-egui/src/update_notice.rs`); an update not applied by a restart is
+  applied on the next start. After an install or update the app copies the Claude skill and
+  re-registers the MCP server from its own folder. Editors: see [INSTALL.md](INSTALL.md).
 - Branding lives in `crates/engine/src/vibezcut.rs` (name, version, data folder) and
   `assets/app-icon/vibezcut*`. Internal ids, the `.fcproj` format and interchange tags keep their
   FilmCraft names so projects stay compatible. Settings and auto-save go to `%APPDATA%\VibezCut`.
