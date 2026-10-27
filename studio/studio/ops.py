@@ -76,8 +76,14 @@ def accent(c, clip, text, substring, color="#C8F040", layer=0):
 
 def move_clip(c, clip, start_s, track=None, fps=60):
     mv = {"clip": clip, "time": fc.ticks(start_s, fps)}
-    if track:
-        mv["track"] = track
+    if not track:  # the engine needs a track per move: default to the clip's own
+        for _, tr in _tracks(c.sequence()):
+            if any(i["clip"] == clip for i in tr.get("items", [])):
+                track = tr["id"]
+                break
+        else:
+            raise fc.FilmCraftError(f"no clip {clip} in this sequence")
+    mv["track"] = track
     return c.run("timeline.move", {"moves": [mv], "insert": False})
 
 
