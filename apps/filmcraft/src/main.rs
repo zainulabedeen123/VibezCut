@@ -175,7 +175,7 @@ fn main() -> eframe::Result {
 fn native_options(agent: bool) -> eframe::NativeOptions {
     eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title(filmcraft_engine::vibezcut::NAME)
+            .with_title(format!("{} {}", filmcraft_engine::vibezcut::NAME, filmcraft_engine::vibezcut::VERSION))
             .with_inner_size([1600.0, 980.0])
             .with_min_inner_size([900.0, 560.0])
             .with_drag_and_drop(true)

@@ -4,7 +4,7 @@
 //!   applies an update that was downloaded earlier before the app starts.
 //! * `start()` runs in the background once the app is up. When VibezCut was installed with
 //!   `VibezCut-Setup.exe` it checks the GitHub Releases of the VibezCut repository, downloads a
-//!   newer version and tells the UI (`filmcraft_engine::vibezcut::update_ready`), which offers
+//!   newer version and tells the UI (`filmcraft_engine::vibezcut::UpdateState`), which offers
 //!   "Restart to update". An update that is not applied by a restart is applied on the next start.
 //! * After an install or an update it keeps Claude pointed at this version: the `filmcraft-edit`
 //!   skill is copied to `~/.claude/skills` and the `filmcraft-studio` MCP server is registered for
@@ -12,11 +12,13 @@
 //!
 //! A copy that was not installed with Setup (a zip, a developer build) skips all of this.
 
-use filmcraft_engine::vibezcut;
+use filmcraft_engine::vibezcut::{self, UpdateState};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, PoisonError};
 use velopack::sources::GithubSource;
-use velopack::{UpdateCheck, UpdateManager, VelopackApp};
+use velopack::{UpdateCheck, UpdateManager, VelopackApp, VelopackAsset};
 
 /// Velopack's start-up hooks. Must run before anything else: it may exit or restart the process.
 pub fn startup() {
@@ -25,48 +27,95 @@ pub fn startup() {
         .run();
 }
 
-/// Background update check and Claude integration sync (installed copies only).
+/// The downloaded update that "Restart to update" installs.
+static PENDING: Mutex<Option<VelopackAsset>> = Mutex::new(None);
+/// A check is running (Help ▸ Check for Updates while one runs does nothing more).
+static CHECKING: AtomicBool = AtomicBool::new(false);
+
+/// Background update check and Claude integration sync (installed copies only); registers the
+/// hooks behind Help ▸ Check for Updates and "Restart to update".
 pub fn start(data_root: Option<PathBuf>) {
     let spawned = std::thread::Builder::new().name("vibezcut-update".into()).spawn(move || {
         let source = GithubSource::new(vibezcut::REPOSITORY, None, false);
         let um = match UpdateManager::new(source, None, None) {
             Ok(um) => um,
             Err(e) => {
+                // no hooks: Help ▸ Check for Updates explains that this copy can't update itself
                 log::info!("updates: off, this copy was not installed with Setup ({e})");
                 return;
             }
         };
         log::info!("updates: installed {} {}", um.get_app_id(), um.get_current_version_as_string());
-        if let Some(root) = data_root.as_deref() {
-            sync_claude_integration(root);
-        }
-        match um.check_for_updates() {
-            Ok(UpdateCheck::UpdateAvailable(info)) => {
-                let version = info.TargetFullRelease.Version.clone();
-                log::info!("updates: {version} available, downloading");
-                if let Err(e) = um.download_updates(&info, None) {
-                    log::warn!("updates: download of {version} failed: {e}");
-                    return;
-                }
-                let asset = info.TargetFullRelease.clone();
-                let manager = um.clone();
-                vibezcut::set_restart_hook(Box::new(move || match manager.wait_exit_then_apply_updates(&asset, true, true, Vec::<String>::new()) {
+        vibezcut::set_restart_hook(Box::new({
+            let um = um.clone();
+            move || {
+                let Some(asset) = PENDING.lock().unwrap_or_else(PoisonError::into_inner).clone() else { return false };
+                match um.wait_exit_then_apply_updates(&asset, true, true, Vec::<String>::new()) {
                     Ok(()) => true,
                     Err(e) => {
                         log::warn!("updates: could not start the updater: {e}");
                         false
                     }
-                }));
-                log::info!("updates: {version} downloaded, ready to install");
-                vibezcut::set_update_ready(version);
+                }
             }
-            Ok(_) => log::info!("updates: up to date"),
-            Err(e) => log::warn!("updates: check failed: {e}"),
+        }));
+        vibezcut::set_check_hook(Box::new({
+            let um = um.clone();
+            move || {
+                let um = um.clone();
+                std::thread::Builder::new().name("vibezcut-update-check".into()).spawn(move || check(&um)).is_ok()
+            }
+        }));
+        if let Some(root) = data_root.as_deref() {
+            sync_claude_integration(root);
         }
+        check(&um);
     });
     if let Err(e) = spawned {
         log::warn!("updates: no update thread: {e}");
     }
+}
+
+/// One check: report progress to the UI, download a newer version, mark it ready.
+fn check(um: &UpdateManager) {
+    if CHECKING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    if let Some(asset) = um.get_update_pending_restart() {
+        let v = asset.Version.clone();
+        *PENDING.lock().unwrap_or_else(PoisonError::into_inner) = Some(asset);
+        vibezcut::set_update_state(UpdateState::Ready(v));
+        CHECKING.store(false, Ordering::SeqCst);
+        return;
+    }
+    vibezcut::set_update_state(UpdateState::Checking);
+    match um.check_for_updates() {
+        Ok(UpdateCheck::UpdateAvailable(info)) => {
+            let version = info.TargetFullRelease.Version.clone();
+            log::info!("updates: {version} available, downloading");
+            vibezcut::set_update_state(UpdateState::Downloading(version.clone()));
+            match um.download_updates(&info, None) {
+                Ok(()) => {
+                    *PENDING.lock().unwrap_or_else(PoisonError::into_inner) = Some(info.TargetFullRelease.clone());
+                    log::info!("updates: {version} downloaded, ready to install");
+                    vibezcut::set_update_state(UpdateState::Ready(version));
+                }
+                Err(e) => {
+                    log::warn!("updates: download of {version} failed: {e}");
+                    vibezcut::set_update_state(UpdateState::Failed(format!("Downloading {version} failed: {e}")));
+                }
+            }
+        }
+        Ok(_) => {
+            log::info!("updates: up to date");
+            vibezcut::set_update_state(UpdateState::UpToDate);
+        }
+        Err(e) => {
+            log::warn!("updates: check failed: {e}");
+            vibezcut::set_update_state(UpdateState::Failed(format!("{e}. Check your internet connection and try again.")));
+        }
+    }
+    CHECKING.store(false, Ordering::SeqCst);
 }
 
 /// The folder with VibezCut.exe, the studio layer and the Claude skill.
