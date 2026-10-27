@@ -6,3 +6,8 @@ plan/
 .DS_Store
 .claude/worktrees/
 __pycache__/
+
+# VibezCut studio layer
+studio/studio.json
+__pycache__/
+*.pyc

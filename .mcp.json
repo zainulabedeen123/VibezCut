@@ -2,11 +2,24 @@
   "mcpServers": {
     "filmcraft": {
       "command": "target/release/filmcraft-cli",
-      "args": ["mcp", "--bridge", "127.0.0.1:9876"]
+      "args": [
+        "mcp",
+        "--bridge",
+        "127.0.0.1:9876"
+      ]
     },
     "filmcraft-headless": {
       "command": "target/release/filmcraft-cli",
-      "args": ["mcp", "--demo"]
+      "args": [
+        "mcp",
+        "--demo"
+      ]
+    },
+    "filmcraft-studio": {
+      "command": "python",
+      "args": [
+        "studio/run_server.py"
+      ]
     }
   }
 }

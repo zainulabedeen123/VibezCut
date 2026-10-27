@@ -1,3 +1,18 @@
+# VibezCut
+
+**VibezCut** is our video editor and AI editing workflow, built on
+[FilmCraft](https://github.com/storytold/filmcraft) 0.13.0 by the ArtCraft team (MIT / Apache-2.0;
+their licenses, NOTICE and attribution are kept unchanged in this repository).
+
+What VibezCut adds lives in [`studio/`](studio) and [`docs/vibezcut/`](docs/vibezcut): a verbatim
+transcription and take-selection pipeline, a native project builder, and the `filmcraft-studio` MCP
+server that lets Claude edit live in the open editor. Start with
+[docs/vibezcut/STUDIO.md](docs/vibezcut/STUDIO.md).
+
+The original FilmCraft README follows.
+
+---
+
 <p align="center">
   <a href="https://getartcraft.com/">
     <picture>

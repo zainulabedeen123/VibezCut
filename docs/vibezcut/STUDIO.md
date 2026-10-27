@@ -1,0 +1,60 @@
+# VibezCut Studio
+
+The editing workflow built into VibezCut:
+
+- an **analysis pipeline** that turns a raw talking-head / screen-share recording into a clean cut
+  (verbatim transcription, take selection, frame-safe cut points, verification),
+- a **project builder** that writes a native, fully editable project (cuts, camera keyframes,
+  native text graphics, music and individual SFX clips, the transcript in the Text panel),
+- an **MCP server** (`filmcraft-studio`) so Claude can run the pipeline and revise the edit live in
+  the open editor window, with every change a normal undoable step.
+
+```
+VibezCut/
+├─ Start VibezCut (Claude control).bat    launch the editor with the control channel (fresh token)
+├─ .mcp.json                              registers filmcraft-studio (and the upstream dev servers)
+├─ .claude/skills/filmcraft-edit/         the editing skill for Claude
+├─ docs/vibezcut/                         STUDIO.md (this file), WORKFLOW.md
+├─ .github/upstream-workflows/            FilmCraft's own CI, parked (not run in this repo)
+├─ apps/, crates/, …                      the editor (FilmCraft 0.13.0 source, MIT/Apache-2.0)
+└─ studio/
+   ├─ run_server.py                       MCP entry point
+   ├─ studio.json                         per-machine settings (not committed)
+   ├─ assets/sfx/                         synthesized SFX library (whoosh, tick, sub_hit, riser…)
+   └─ studio/
+      ├─ config.py      settings, editor binaries, per-video work folder
+      ├─ fc.py          editor client: Headless (filmcraft-cli mcp) and Live (control channel)
+      ├─ audio.py       audio extraction, loudness envelope, quiet runs, activity segmentation
+      ├─ transcribe.py  verbatim Whisper (large-v3-turbo, GPU): chunks + phrases
+      ├─ takes.py       chosen takes -> cut points (ASR judge + MMS forced alignment)
+      ├─ assemble.py    pieces, dialogue render, whole-edit verification (repeats/restarts)
+      ├─ build.py       edit.json -> native .fcproj
+      ├─ style.py       house style (fonts, colours, text-block layout, camera ladder, mix)
+      ├─ sound.py       SFX library, ambient music bed, level matching to the voice
+      ├─ ops.py         revision operations (find/retype text, trim a cut, remove a range, gain…)
+      └─ server.py      the MCP tools
+```
+
+## Setup (until the installer exists)
+
+1. Editor binaries: either build this repo (`cargo build --release -p filmcraft -p filmcraft-cli`,
+   Rust 1.95+) or point `studio/studio.json` at a FilmCraft 0.13.0 portable folder:
+   `{"filmcraft_home": "C:\\path\\to\\filmcraft-0.13.0-windows-x64-portable"}`.
+2. Python 3.12 with `faster-whisper`, `torch` + `torchaudio` (CUDA), `numpy`, `pillow`, `mcp`; `ffmpeg` on PATH.
+3. Register the MCP server for every folder (use the full python.exe path on Windows; a bare
+   `python` fails Claude Code's connection check):
+   `claude mcp add --scope user filmcraft-studio -- "<python.exe>" "<repo>/studio/run_server.py"`.
+
+## Live editing
+
+Start the editor with **`Start VibezCut (Claude control).bat`** (drag a `.fcproj` onto it to open it).
+It makes a fresh 64-hex token per session, keeps it only in `%USERPROFILE%\.filmcraft-studio\control.token`
+and starts the editor with `--control 9876` (loopback only). The MCP server reads the token there.
+
+## Upstream
+
+`upstream` = storytold/filmcraft (push disabled). Our `main` started at their `v0.13.0` release.
+Merge their later releases deliberately (`git fetch upstream --tags && git merge v0.x.y`), keeping our
+changes in separate modules where possible so merges stay small.
+
+See [WORKFLOW.md](WORKFLOW.md) for the per-video workflow.
