@@ -21,6 +21,16 @@ On its first start VibezCut connects itself to Claude: it copies the `filmcraft-
 (`claude mcp get filmcraft-studio` should say Connected). This needs steps 1 and 2 done first;
 if they weren't, it tries again on the next start.
 
+## When you receive a project
+
+You get a zip. Unzip it anywhere, then:
+1. If the zip says the full-resolution media is not included, download the files listed in
+   `handoff/HANDOFF.md` into the `media` folder next to the `.fcproj` (keep the file names).
+2. Open the `.fcproj` in VibezCut, open Claude Code in the unzipped folder, and say "connect to VibezCut and
+   read the handoff". Claude finds missing media, tells you what the sender noted, and can link the raw if you
+   downloaded it somewhere else.
+3. Edit with proxies; export always uses the full-resolution files.
+
 ## Every day
 
 - Start VibezCut from the normal shortcut. Every start is ready for Claude to edit live in the window

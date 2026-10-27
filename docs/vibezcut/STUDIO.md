@@ -59,6 +59,14 @@ On Windows every normal start of VibezCut can work with Claude (`apps/filmcraft/
   `crates/platform/src/taskbar_overlay.rs`). It ends with the conversation's MCP server process.
 - One conversation = one project (`server._check_project`): live edits are refused with "Project mismatch"
   when another project is open; `fc_open` / `fc_use_open_project` switch deliberately.
+- **Handoff packs** (`studio/studio/pack.py`; tools `fc_pack`, `fc_pack_status`, `fc_handoff`, `fc_relink`): a pack is one
+  folder + zip that opens on any computer. The project's media and proxy paths are rewritten to RELATIVE ones
+  (VibezCut resolves a relative path from the project's folder), so it opens wherever it is unpacked.
+  Layout: `<name>.fcproj`, `media/` (full-resolution files, only with `include_media=True`), `proxies/`, `handoff/`
+  (`HANDOFF.md`, `manifest.json`, extras, later `CHANGELOG.md`). File > Project Manager is not used for this: it
+  writes absolute paths and always copies the full media. Missing media on the receiving side is relinked by
+  folder (`media.autoRelink`); each candidate is checked against the size + fingerprint stored in the project.
+  The raw never has to be in the zip (it can come from cloud storage), and export always uses full resolution.
 - `VIBEZCUT_NO_CLAUDE=1` turns it off. `Start VibezCut (Claude control).bat` (explicit `--control 9876`)
   still works, without the indicators.
 

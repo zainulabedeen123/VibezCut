@@ -9,11 +9,13 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP, Image
 
-from . import assemble, build, config, fc, ops, takes, transcribe
+from . import assemble, build, config, fc, ops, pack, takes, transcribe
 
 mcp = FastMCP("filmcraft-studio")
 _conn: dict = {}
@@ -287,6 +289,80 @@ def fc_save(path: str = "", target: str = "live") -> dict:
             _project.update(key=key, name=name)
         return r
     return _safe(go)
+
+
+_packs: dict = {}
+
+
+@mcp.tool()
+def fc_pack(out_dir: str, include_media: bool = False, proxy_preset: str = "h264_half", notes: str = "",
+            extras: list[str] | None = None, download_urls: dict | None = None, name: str = "",
+            save_first: bool = False, overwrite: bool = False, make_zip: bool = True, wait: bool = True) -> dict:
+    """Pack the open project to send to an editor: <out_dir>/<name>/ (and <name>.zip) with the project
+    (RELATIVE media paths, so it opens wherever it is unpacked), proxies, and a handoff/ folder
+    (HANDOFF.md, manifest.json, extras such as the script or cut report). include_media=False (default)
+    leaves the big full-resolution files out: the editor downloads them into media/ (download_urls maps
+    file name -> link, shown in HANDOFF.md). proxy_preset: h264_half | h264_quarter | prores_proxy_half…
+    ("" = no proxies). notes: free text for HANDOFF.md (title, sponsor, what to do next).
+    The project must be saved (save_first=True saves it). Proxies of long footage take a while:
+    wait=False returns a job id at once, follow it with fc_pack_status."""
+    c = _client("live")
+    _, pname, path, dirty = _open_project(c)
+    if not path:
+        return {"error": f"'{pname}' was never saved to a file: save it in VibezCut first (or fc_save with a path)."}
+    if dirty:
+        if not save_first:
+            return {"error": f"'{pname}' has unsaved changes: the pack is made from the saved file. Call again with save_first=True."}
+        c.run("file.save", {})
+    job = f"pack{len(_packs) + 1}"
+    st = {"job": job, "state": "running", "step": "starting", "detail": "", "started": time.time()}
+    _packs[job] = st
+
+    def work():
+        try:
+            st["result"] = pack.pack(path, out_dir, make_client=fc.Live, include_media=include_media, proxy_preset=proxy_preset,
+                                     name=name, notes=notes, extras=extras, download_urls=download_urls, make_zip=make_zip,
+                                     overwrite=overwrite, progress=lambda step, d="": st.update(step=step, detail=d))
+            st["state"] = "done"
+        except Exception as e:  # reported by fc_pack_status
+            st.update(state="error", error=str(e))
+        st["seconds"] = round(time.time() - st["started"], 1)
+    t = threading.Thread(target=work, daemon=True)
+    t.start()
+    if wait:
+        t.join()
+        return st.get("result") or {"error": st.get("error", "pack failed")}
+    return {"job": job, "note": "running in the background: fc_pack_status(job) shows progress"}
+
+
+@mcp.tool()
+def fc_pack_status(job: str = "") -> dict:
+    """Progress of fc_pack(wait=False): state (running | done | error), step, and the result when done."""
+    if not job:
+        return {"jobs": [{k: v for k, v in j.items() if k != "result"} for j in _packs.values()]}
+    j = _packs.get(job)
+    return {k: v for k, v in j.items() if k != "started"} if j else {"error": f"no pack job {job}"}
+
+
+@mcp.tool()
+def fc_handoff(log: str = "") -> dict:
+    """Open pack, editor side: read handoff/HANDOFF.md and the changelog next to the open project and
+    list which media is still missing. Call it first when a project was sent to you. log="…" adds a
+    line to handoff/CHANGELOG.md (do it at the end of a session: what you did, what is left)."""
+    def go():
+        c = _client("live")
+        _, pname, path, _ = _open_project(c)
+        if not path:
+            raise fc.FilmCraftError(f"'{pname}' was never saved to a file, so it has no handoff folder.")
+        return pack.read_handoff(c, path, log)
+    return _safe(go)
+
+
+@mcp.tool()
+def fc_relink(folder: str) -> dict:
+    """Link missing media by searching ``folder`` (and its sub-folders), e.g. where the raw footage was
+    downloaded. Each candidate is checked against the fingerprint stored in the project."""
+    return _safe(lambda: pack.relink(_client("live"), folder))
 
 
 @mcp.tool()

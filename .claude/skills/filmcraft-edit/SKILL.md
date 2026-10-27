@@ -23,6 +23,18 @@ Full rules: `docs/vibezcut/WORKFLOW.md` in the VibezCut repo. House style: `stud
 7. `studio_build_project`, then look at a few frames (`fc_frame` with the project path as target).
 8. Open it in VibezCut with `fc_open(path)` (or tell the user to open the .fcproj).
 
+## Handoff packs (sending a project to an editor, or receiving one)
+- **Sending**: the user asks to pack/send it. The project must be saved. `fc_pack(out_dir, notes=..., extras=[script,
+  cut report, units.json…], download_urls={file: link})` writes `<out_dir>/<name>/` and `<name>.zip`: the project with
+  relative media paths, proxies, and `handoff/` (HANDOFF.md, manifest.json). Default `include_media=False`: the big
+  full-resolution files stay out; tell the user which ones the editor must download into `media/`. Long footage:
+  `wait=False` then `fc_pack_status(job)`. Put in `notes` what the editor needs: sponsor, what is done, what is next.
+- **Receiving** (a project somebody else cut): FIRST call `fc_handoff()`. It returns HANDOFF.md, the changelog and
+  which media is missing. Missing media: the files go in the `media` folder next to the project (then reopen), or
+  `fc_relink(folder)` with the folder they were downloaded to. Do not re-transcribe the raw: the word-level
+  transcript is already inside the project. At the end of a session call `fc_handoff(log="what you did / what is left")`.
+- Proxies are for editing only; export always uses the full-resolution files, so the raw must be linked before export.
+
 ## Revisions (project already delivered)
 - Never regenerate from edit.json once the user has the project: the .fcproj is the master.
 - Prefer live: `fc_status()`. Every normal VibezCut start works with Claude; the window Claude works
