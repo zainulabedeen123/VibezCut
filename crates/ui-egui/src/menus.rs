@@ -147,6 +147,7 @@ pub const UI_COMMANDS: &[UiCommand] = &[
     uic!("help.revealLogFiles", "Reveal Log Files…", ["Help"], None),
     uic!("help.systemCompatibilityReport", "System Compatibility Report…", ["Help"], None),
     uic!("help.checkForUpdates", "Check for Updates…", ["Help"], None),
+    uic!("claude.connectHere", "Connect Claude to This Window", ["Window"], None),
     uic!("app.about", "About VibezCut", ["Help"], None),
     uic!("app.keyboardShortcuts", "Keyboard Shortcuts…", ["Edit"], Some("Cmd+Alt+K")),
     uic!("app.settings.general", "General…", ["Edit", "Preferences"], Some("Cmd+,")),
@@ -447,6 +448,15 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
         }
         "app.about" => {
             app.dialog = Some(crate::Dialog::About);
+            return Ok(Value::Null);
+        }
+        "claude.connectHere" => {
+            use filmcraft_engine::vibezcut::{ClaudeLink, claim_claude, claude_link};
+            app.ui.status = match claude_link() {
+                ClaudeLink::Ready | ClaudeLink::Connected => tl!("Claude already works with this window").to_string(),
+                _ if claim_claude() => tl!("Connecting Claude to this window…").to_string(),
+                _ => tl!("Claude isn't available in this copy of VibezCut").to_string(),
+            };
             return Ok(Value::Null);
         }
         "help.checkForUpdates" => {

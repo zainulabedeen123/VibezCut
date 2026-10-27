@@ -58,12 +58,8 @@ def find_text(c, query):
 
 
 def set_text(c, clip, text, layer=0):
-    r = c.run("graphics.setText", {"clip": clip, "layer": layer, "text": text})
-    try:  # keep the timeline label in step with the text
-        c.run("clip.rename", {"clip": clip, "name": text})
-    except fc.FilmCraftError:
-        pass
-    return r
+    # `rename`: the timeline label follows the text, in the same undo step
+    return c.run("graphics.setText", {"clip": clip, "layer": layer, "text": text, "rename": True})
 
 
 def style_text(c, clip, props, layer=0):

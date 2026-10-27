@@ -2,9 +2,11 @@
 
 * ``Headless`` - spawns ``filmcraft-cli mcp [--project p]`` and talks MCP over stdio.
   Used to build a project file while FilmCraft is closed (or has another project open).
-* ``Live`` - connects straight to the running app's JSON-lines control channel
-  (``filmcraft --control PORT`` with ``FILMCRAFT_CONTROL_TOKEN``). Every edit lands in the
-  user's open window as a normal, undoable FilmCraft step.
+* ``Live`` - connects straight to the running app's JSON-lines control channel. VibezCut opens
+  it on every normal start (the window with the Claude badge; the token is in
+  ``~/.filmcraft-studio/control.token``, new for every hold). Every edit lands in the user's open
+  window as a normal, undoable step. ``keep_attached()`` keeps this conversation's link open, so
+  the window shows that Claude is connected.
 
 Both expose the same surface: ``run(cmd, params)``, ``batch(steps)``, ``sequence()``,
 ``project()``, ``render_frame(seconds, path)``.
@@ -17,6 +19,8 @@ import json
 import os
 import socket
 import subprocess
+import threading
+import time
 from pathlib import Path
 
 from . import config
@@ -127,14 +131,17 @@ class Live:
 
     def __init__(self, port: int | None = None, token: str | None = None):
         self.port = port or config.control_port()
+        self._fixed_token = token
         self.token = token or config.control_token()
-        if not self.token:
-            raise FilmCraftError("No control token. Start FilmCraft with 'Start FilmCraft (Claude control).bat'.")
         self._ids = itertools.count(1)
         self._sock = None
         self._buf = b""
 
     def _connect(self):
+        # the token changes whenever VibezCut restarts or another window takes the link: read it again
+        self.token = self._fixed_token or config.control_token()
+        if not self.token:
+            raise ConnectionError("no token")
         s = socket.create_connection(("127.0.0.1", self.port), timeout=10)
         s.settimeout(180)
         self._sock, self._buf = s, b""
@@ -157,12 +164,17 @@ class Live:
                 line, self._buf = self._buf.split(b"\n", 1)
                 reply = json.loads(line)
                 if not reply.get("ok", False):
-                    raise FilmCraftError(reply.get("error", "control request failed"))
+                    err = reply.get("error", "control request failed")
+                    if "authentication failed" in err:  # an old token: VibezCut restarted
+                        raise ConnectionError(err)
+                    raise FilmCraftError(err)
                 return reply.get("result")
             except (ConnectionError, OSError):
+                if self._sock is not None:
+                    self._sock.close()
                 self._sock = None
                 if attempt == 2:
-                    raise FilmCraftError(f"Cannot reach FilmCraft on 127.0.0.1:{self.port}. Is it running with control on?")
+                    raise FilmCraftError(NOT_REACHABLE.format(port=self.port))
 
     def run(self, cmd, params=None):
         return self._call("engine.execute", {"command": cmd, "params": params or {}})
@@ -206,6 +218,56 @@ class Live:
         if self._sock:
             self._sock.close()
             self._sock = None
+
+
+NOT_REACHABLE = (
+    "Cannot reach VibezCut on 127.0.0.1:{port}. Ask the user to open VibezCut (any normal start works with "
+    "Claude). With several VibezCut windows open, Claude works with the one whose header badge says Claude; "
+    "Window > Connect Claude to This Window moves it."
+)
+
+_attach_started = False
+
+
+def keep_attached(port: int | None = None):
+    """Keep one connection to VibezCut open for as long as this conversation's MCP server runs, so the
+    window shows that Claude is connected (header badge, glow, title, taskbar dot). It follows VibezCut
+    when it restarts or another window takes the link, and ends with the process."""
+    global _attach_started
+    if _attach_started:
+        return
+    _attach_started = True
+    port = port or config.control_port()
+    hello = {"client": "Claude Code", "pid": os.getpid()}
+
+    def loop():
+        while True:
+            try:
+                token = config.control_token()
+                if not token:
+                    raise ConnectionError("no token")
+                with socket.create_connection(("127.0.0.1", port), timeout=5) as s:
+                    s.settimeout(20)
+                    f = s.makefile("rwb")
+
+                    def call(method):
+                        f.write((json.dumps({"id": 0, "token": token, "method": method, "params": hello}) + "\n").encode())
+                        f.flush()
+                        line = f.readline()
+                        if not line:
+                            raise ConnectionError("closed")
+                        return json.loads(line).get("ok", False)
+
+                    if not call("vibezcut.attach"):
+                        time.sleep(20)  # an older VibezCut without the indicator, or a stale token
+                        continue
+                    while call("vibezcut.ping"):
+                        time.sleep(4)
+            except Exception:
+                pass
+            time.sleep(2)
+
+    threading.Thread(target=loop, name="vibezcut-attach", daemon=True).start()
 
 
 def connect(prefer: str = "auto", project: str | None = None):

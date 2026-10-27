@@ -31,7 +31,7 @@ pub fn start(port: u16, ctx: egui::Context) -> Receiver<ControlRequest> {
     start_with_token(port, ctx, std::env::var("FILMCRAFT_CONTROL_TOKEN").ok())
 }
 
-pub fn start_with_token(port: u16, ctx: egui::Context, token: Option<String>) -> Receiver<ControlRequest> {
+fn start_with_token(port: u16, ctx: egui::Context, token: Option<String>) -> Receiver<ControlRequest> {
     let (tx, rx) = channel::<ControlRequest>();
     // An inherited environment variable shares the credential with the owner's bridge process
     // without exposing it in command-line arguments, logs, or a shared discovery file.
@@ -94,13 +94,27 @@ fn serve_with_timeout(stream: TcpStream, tx: &Sender<ControlRequest>, ctx: &egui
     stream.set_read_timeout(Some(timeout))?;
     stream.set_write_timeout(Some(timeout))?;
     let read = stream.try_clone()?;
-    serve_lines(read, stream, token, |method, params| {
-        let (req, rrx) = ControlRequest::new(method, params);
-        tx.send(req).ok()?;
-        ctx.request_repaint();
-        Some(rrx.recv_timeout(Duration::from_secs(60)).unwrap_or_else(|_| json!({"ok": false, "error": "timeout"})))
-    });
+    serve_lines(read, stream, token, |method, params| forward(tx, ctx, method, params));
     Ok(())
+}
+
+/// Serve one connection with the same framing, limits and per-request authentication as the
+/// control server, answering each request with `handle` (`None` closes the connection). Used by
+/// the Claude link (`claude_link.rs`), which answers its own `vibezcut.*` requests.
+pub fn serve_custom(stream: TcpStream, token: &str, handle: impl FnMut(String, Value) -> Option<Value>) -> std::io::Result<()> {
+    stream.set_read_timeout(Some(CONNECTION_TIMEOUT))?;
+    stream.set_write_timeout(Some(CONNECTION_TIMEOUT))?;
+    let read = stream.try_clone()?;
+    serve_lines(read, stream, token, handle);
+    Ok(())
+}
+
+/// Hand one request to the UI thread and wait for its reply (`None`: the app is gone).
+pub fn forward(tx: &Sender<ControlRequest>, ctx: &egui::Context, method: String, params: Value) -> Option<Value> {
+    let (req, rrx) = ControlRequest::new(method, params);
+    tx.send(req).ok()?;
+    ctx.request_repaint();
+    Some(rrx.recv_timeout(Duration::from_secs(60)).unwrap_or_else(|_| json!({"ok": false, "error": "timeout"})))
 }
 
 /// One parsed line.

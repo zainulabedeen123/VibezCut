@@ -38,7 +38,12 @@
 - The verbatim transcript is pushed into FilmCraft (Text panel) for text-based edits.
 
 **Revising live**
-- FilmCraft must be started with `Start VibezCut (Claude control).bat`.
+- Open VibezCut normally. The window Claude works with has a **Claude** badge in its header; while a
+  Claude conversation is connected the badge is orange, the window has a soft orange glow, the title
+  says "● Claude" and the taskbar button has an orange dot. Other VibezCut windows say "Claude: other
+  window"; click it (or Window > Connect Claude to This Window) to move Claude there.
+- One conversation per project: a conversation that worked on one project won't edit another one
+  you opened since; Claude asks which one you mean.
 - Don't edit while Claude is applying a change; every change is one undo step (Ctrl+Z).
 - Ripple trims are refused when a clip on a sync-locked track spans the cut (a title or SFX over the
   edit). Claude then trims that overlay too, or asks.

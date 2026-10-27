@@ -47,10 +47,20 @@ VibezCut/
 
 ## Live editing
 
-On Windows every normal start of VibezCut serves Claude: the first window makes a fresh 64-hex token,
-writes it to `%USERPROFILE%\.filmcraft-studio\control.token` and listens on 127.0.0.1:9876
-(`updater::claude_control_token`). The MCP server reads the token there. `VIBEZCUT_NO_CLAUDE=1` turns
-it off. **`Start VibezCut (Claude control).bat`** still works (explicit `--control 9876`).
+On Windows every normal start of VibezCut can work with Claude (`apps/filmcraft/src/claude_link.rs`):
+
+- One window at a time holds 127.0.0.1:9876 with a fresh 64-hex token, written to
+  `%USERPROFILE%\.filmcraft-studio\control.token` (the MCP server reads it there, again after a refusal).
+  When that window closes the next one takes over; Window > Connect Claude to This Window (or the header
+  badge) writes a claim file and the holder hands over.
+- A conversation keeps one connection open (`fc.keep_attached`: `vibezcut.attach`, then `vibezcut.ping`
+  every 4 s). While one is open the window shows it: orange header badge, window glow, "● Claude" in
+  the title, a Claude dot on the taskbar button (`crates/ui-egui/src/claude_indicator.rs`,
+  `crates/platform/src/taskbar_overlay.rs`). It ends with the conversation's MCP server process.
+- One conversation = one project (`server._check_project`): live edits are refused with "Project mismatch"
+  when another project is open; `fc_open` / `fc_use_open_project` switch deliberately.
+- `VIBEZCUT_NO_CLAUDE=1` turns it off. `Start VibezCut (Claude control).bat` (explicit `--control 9876`)
+  still works, without the indicators.
 
 ## Builds and releases
 

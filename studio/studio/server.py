@@ -7,6 +7,7 @@ using ordinary FilmCraft commands, so every change is undoable in FilmCraft.
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from pathlib import Path
 
@@ -18,13 +19,50 @@ mcp = FastMCP("filmcraft-studio")
 _conn: dict = {}
 
 
-def _client(target: str = "live"):
-    """``live`` = the open FilmCraft window; otherwise a .fcproj path opened headless."""
+# The project this conversation works on (live). One conversation = one project: before every live
+# edit the open project is checked against it, so a conversation never edits another project that
+# the user opened in the meantime.
+_project: dict = {"key": None, "name": None}
+
+
+def _norm(path: str) -> str:
+    return os.path.normcase(os.path.normpath(path))
+
+
+def _open_project(c) -> tuple[str, str, str | None, bool]:
+    """(key, name, file, unsaved changes) of the project open in VibezCut."""
+    p = c.project()
+    path, name = p.get("path"), p.get("name") or "Untitled"
+    return (_norm(path) if path else f"(not saved) {name}"), name, path, bool(p.get("dirty"))
+
+
+def _check_project(c):
+    key, name, path, _ = _open_project(c)
+    bound = _project["key"]
+    if bound is None or (bound.startswith("(not saved) ") and _project["name"] == name):
+        _project.update(key=key, name=name)  # first live use, or the new project was just saved
+        return
+    if key != bound:
+        back = ("the user can open it again in VibezCut (it was never saved to a file)" if bound.startswith("(not saved) ")
+                else f"fc_open(\"{bound}\") goes back to it")
+        raise fc.FilmCraftError(
+            f"Project mismatch, nothing was changed: VibezCut has '{name}' open ({path or 'not saved yet'}), "
+            f"but this conversation is working on '{_project['name']}'. Ask the user which project to edit: {back}; "
+            f"fc_use_open_project() makes this conversation work on the open one."
+        )
+
+
+def _client(target: str = "live", check: bool = True):
+    """``live`` = the open VibezCut window; otherwise a .fcproj path opened headless."""
     key = target
     c = _conn.get(key)
     if c is None:
         c = fc.Live() if target == "live" else fc.Headless(target)
         _conn[key] = c
+    if target == "live":
+        fc.keep_attached()
+        if check:
+            _check_project(c)
     return c
 
 
@@ -112,14 +150,53 @@ def studio_build_project(edit_json: str, out: str = "") -> dict:
 # ============================================================================ FilmCraft (live / file)
 @mcp.tool()
 def fc_status(target: str = "live") -> dict:
-    """Sequence summary (tracks, clip counts, duration). target = "live" or a .fcproj path."""
-    return _safe(lambda: ops.summary(_client(target)))
+    """Sequence summary (tracks, clip counts, duration). target = "live" or a .fcproj path. Live: also
+    the open project and the project this conversation works on."""
+    def go():
+        c = _client(target, check=False)
+        r = ops.summary(c)
+        if target == "live":
+            key, name, path, dirty = _open_project(c)
+            if _project["key"] is None:
+                _project.update(key=key, name=name)
+            r.update(open_project=name, file=path, unsaved_changes=dirty, conversation_project=_project["name"],
+                     same_project=_project["key"] == key)
+        return r
+    return _safe(go)
 
 
 @mcp.tool()
-def fc_open(path: str) -> dict:
-    """Open a project in the running FilmCraft window."""
-    return _safe(lambda: _client("live").run("file.open", {"path": path}))
+def fc_open(path: str, save_current: bool = False) -> dict:
+    """Open a project in the VibezCut window; this conversation then works on it. If the open project
+    has unsaved changes this refuses: ask the user, then call again with save_current=True to save it first."""
+    def go():
+        c = _client("live", check=False)
+        key, name, cur, dirty = _open_project(c)
+        if key == _norm(path):
+            _project.update(key=key, name=name)
+            return {"already_open": cur}
+        if dirty:
+            if not save_current:
+                raise fc.FilmCraftError(f"'{name}' has unsaved changes in VibezCut. Ask the user whether to save them, then call fc_open again with save_current=True (or let the user save or discard them).")
+            if not cur:
+                raise fc.FilmCraftError(f"'{name}' was never saved to a file. Ask the user to save it in VibezCut first.")
+            c.run("file.save", {})
+        r = c.run("file.open", {"path": path})
+        k, n, _, _ = _open_project(c)
+        _project.update(key=k, name=n)
+        return r
+    return _safe(go)
+
+
+@mcp.tool()
+def fc_use_open_project() -> dict:
+    """Make this conversation work on the project that is open in VibezCut now (only after the user
+    said so; see the project-mismatch error)."""
+    def go():
+        key, name, path, _ = _open_project(_client("live", check=False))
+        _project.update(key=key, name=name)
+        return {"project": name, "file": path}
+    return _safe(go)
 
 
 @mcp.tool()

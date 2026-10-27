@@ -120,39 +120,6 @@ fn check(um: &UpdateManager) {
     CHECKING.store(false, Ordering::SeqCst);
 }
 
-/// The port Claude's `filmcraft-studio` MCP server connects to.
-pub const CLAUDE_CONTROL_PORT: u16 = 9876;
-
-/// Live control for Claude on a normal start: when the port is free (the first VibezCut window),
-/// make a fresh 64-hex token for this session and leave it where the MCP server reads it,
-/// `%USERPROFILE%\.filmcraft-studio\control.token` (the user's own profile). Loopback only, and
-/// every request must carry the token. `VIBEZCUT_NO_CLAUDE=1` turns it off.
-pub fn claude_control_token() -> Option<String> {
-    if std::env::var_os("VIBEZCUT_NO_CLAUDE").is_some_and(|v| !v.is_empty()) {
-        return None;
-    }
-    // another VibezCut window already serves Claude: keep its token valid
-    drop(std::net::TcpListener::bind(("127.0.0.1", CLAUDE_CONTROL_PORT)).ok()?);
-    let mut bytes = [0u8; 32];
-    if let Err(e) = getrandom::fill(&mut bytes) {
-        log::warn!("claude: no control token: {e}");
-        return None;
-    }
-    let token: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
-    let dir = home_dir()?.join(".filmcraft-studio");
-    let written = std::fs::create_dir_all(&dir).and_then(|()| std::fs::write(dir.join("control.token"), format!("{token}\n")));
-    match written {
-        Ok(()) => {
-            log::info!("claude: live control on 127.0.0.1:{CLAUDE_CONTROL_PORT}");
-            Some(token)
-        }
-        Err(e) => {
-            log::warn!("claude: control token not written: {e}");
-            None
-        }
-    }
-}
-
 /// The folder with VibezCut.exe, the studio layer and the Claude skill.
 fn app_dir() -> Option<PathBuf> {
     std::env::current_exe().ok()?.parent().map(Path::to_path_buf)

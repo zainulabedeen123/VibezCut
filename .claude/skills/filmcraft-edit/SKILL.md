@@ -21,12 +21,21 @@ Full rules: `docs/vibezcut/WORKFLOW.md` in the VibezCut repo. House style: `stud
    (`style.text_block`), stills, music bed (`sound.music_bed` + `sound.gain_under_voice`, -18 dB),
    individual `sfx` events. Keep it professional: no cartoon styling unless asked.
 7. `studio_build_project`, then look at a few frames (`fc_frame` with the project path as target).
-8. Tell the user to open the .fcproj (or `fc_open` if FilmCraft runs with control).
+8. Open it in VibezCut with `fc_open(path)` (or tell the user to open the .fcproj).
 
 ## Revisions (project already delivered)
 - Never regenerate from edit.json once the user has the project: the .fcproj is the master.
-- Prefer live: `fc_status()`; if unreachable, ask the user to start FilmCraft with
-  `Start VibezCut (Claude control).bat`, or edit the file headless (target = path) while it is closed.
+- Prefer live: `fc_status()`. Every normal VibezCut start works with Claude; the window Claude works
+  with shows a Claude badge in its header (glowing orange while this conversation is connected). If
+  unreachable, ask the user to open VibezCut, or edit the file headless (target = path) while it is closed.
+  With several windows open: Window > Connect Claude to This Window moves Claude to that window.
+- One conversation = one project. The first live call ties this conversation to the open project;
+  later live edits are refused with "Project mismatch" when the user has opened another one. Then ask
+  the user: `fc_open("<this conversation's project>")` goes back to it, `fc_use_open_project()` switches
+  this conversation to the open one. Never work around the check.
+- `fc_open` refuses when the open project has unsaved changes: ask the user, then
+  `fc_open(path, save_current=True)` saves it first.
+- `fc_set_text` is one undo step (text and timeline label together).
 - Typical: `fc_find_text` -> `fc_set_text`/`fc_style_text`; `fc_tighten_cut`; `fc_remove_range`;
   `fc_gain`; `fc_scale_keys`; check with `fc_frame`; `fc_undo` if wrong; `fc_save`.
 - Anything else: `fc_command` with a FilmCraft command id (`filmcraft-cli commands` lists them).

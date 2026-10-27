@@ -113,3 +113,70 @@ pub fn check_for_updates_now() {
         ));
     }
 }
+
+// ------------------------------------------------------------------ Claude link
+//
+// The desktop app (`apps/filmcraft/src/claude_link.rs`, Windows) keeps one VibezCut window linked
+// to Claude: it holds the local control port the `filmcraft-studio` MCP server talks to. It reports
+// the link here; the UI shows it (header badge, window glow, title) and "Connect Claude to This
+// Window" asks for it through the claim hook.
+
+use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
+
+/// Claude's colour (the indicator glow, the header badge, the taskbar dot).
+pub const CLAUDE_RGB: [u8; 3] = [0xD9, 0x77, 0x57];
+
+/// This window's link to Claude.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ClaudeLink {
+    /// No link in this build or on this platform, or turned off (`VIBEZCUT_NO_CLAUDE`).
+    Off,
+    /// Another VibezCut window is the one Claude works with.
+    Standby,
+    /// Claude can work with this window; no Claude conversation is using it now.
+    Ready,
+    /// A Claude conversation is working with this window.
+    Connected,
+}
+
+static CLAUDE_LINK: AtomicU8 = AtomicU8::new(0);
+static CLAUDE_CONVERSATIONS: AtomicUsize = AtomicUsize::new(0);
+type ClaimHook = Box<dyn Fn() + Send + Sync>;
+static CLAIM_HOOK: OnceLock<ClaimHook> = OnceLock::new();
+
+/// Record the link (and how many Claude conversations are attached).
+pub fn set_claude_link(link: ClaudeLink, conversations: usize) {
+    let v = match link {
+        ClaudeLink::Off => 0,
+        ClaudeLink::Standby => 1,
+        ClaudeLink::Ready => 2,
+        ClaudeLink::Connected => 3,
+    };
+    CLAUDE_CONVERSATIONS.store(conversations, Ordering::Relaxed);
+    CLAUDE_LINK.store(v, Ordering::Relaxed);
+}
+
+pub fn claude_link() -> ClaudeLink {
+    match CLAUDE_LINK.load(Ordering::Relaxed) {
+        1 => ClaudeLink::Standby,
+        2 => ClaudeLink::Ready,
+        3 => ClaudeLink::Connected,
+        _ => ClaudeLink::Off,
+    }
+}
+
+/// Claude conversations attached to this window.
+pub fn claude_conversations() -> usize {
+    CLAUDE_CONVERSATIONS.load(Ordering::Relaxed)
+}
+
+/// Registered once by the desktop app: move the link to this window.
+pub fn set_claim_hook(hook: ClaimHook) {
+    let _ = CLAIM_HOOK.set(hook);
+}
+
+/// Connect Claude to this window (it takes the link from the window that has it). `false` when
+/// this build has no link.
+pub fn claim_claude() -> bool {
+    CLAIM_HOOK.get().map(|h| h()).is_some()
+}

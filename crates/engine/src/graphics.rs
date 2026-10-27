@@ -1033,7 +1033,7 @@ pub fn commands() -> Vec<CommandSpec> {
             "Edit Text",
             &[],
             None,
-            r#"{"clip":id?,"layer":n|name?,"text":str,"merge":bool? (coalesce with the previous Edit Text undo step)}"#,
+            r#"{"clip":id?,"layer":n|name?,"text":str,"merge":bool? (coalesce with the previous Edit Text undo step),"rename":bool? (also name the clip after the text, in the same undo step)}"#,
             has_graphic,
             |s, p| {
                 let clip = target_clip(s, p).ok_or_else(|| bad("graphics.setText", "no graphic clip"))?;
@@ -1043,7 +1043,20 @@ pub fn commands() -> Vec<CommandSpec> {
                 let mut props = serde_json::Map::new();
                 props.insert("text".into(), Value::String(text));
                 let ph = s.playhead();
-                set_props(s, clip, ei, &props, ph, "Edit Text", None)?;
+                if bool_p(p, "rename").unwrap_or(false) {
+                    // the timeline label follows the text: one undo step for both
+                    let name = props.get("text").and_then(Value::as_str).unwrap_or_default().to_string();
+                    s.edit_sequence_as("Edit Text", None, |q, _, _| {
+                        let (_, it) = q.find_item_mut(clip).ok_or(filmcraft_edit::EditError::NoItem(clip))?;
+                        let mt = it.source_time_at(ph.clamp(it.start, it.end() - Tick(1)));
+                        let e = it.effects.get_mut(ei).ok_or_else(|| bad("graphics.setText", "no such layer"))?;
+                        apply_props(e, &props, mt)?;
+                        it.name = name;
+                        Ok(())
+                    })?;
+                } else {
+                    set_props(s, clip, ei, &props, ph, "Edit Text", None)?;
+                }
                 if merge && s.history.undo.len() >= 2 {
                     // keep the snapshot from before the typing session
                     s.history.undo.pop();

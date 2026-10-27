@@ -120,12 +120,14 @@ pub fn show(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
     let wresp = ui.interact(wr, egui::Id::new("hdr-ws-name"), Sense::click());
     app.auto.add("header.workspaceName", wr, &ws);
     p.galley_with_override_text_color(pos2(wr.min.x + 4.0, rect.center().y - wg.size().y / 2.0), wg, if wresp.hovered() { t.text } else { t.text_dim });
-    // Project title, centred between the menus and the workspace name (VibezCut has no Discord
-    // button here; the community links are in Help and About).
+    // VibezCut: the Claude badge where FilmCraft had its Discord button (community links are in
+    // Help and About).
+    let claude = crate::claude_indicator::header_badge(app, ui, wr.min.x - 14.0, rect.center().y);
+    // Project title, centred between the menus and the workspace name (or the Claude badge).
     {
         // Localized menus and user titles can be wider than English. Use the actual gap.
         let left = left_end + 12.0;
-        let right = wr.min.x - 26.0;
+        let right = claude.map_or(wr.min.x - 26.0, |r| r.min.x - 12.0);
         if right > left + 40.0 {
             let mut job = egui::text::LayoutJob::simple_singleline(title, Tokens::ui(14.0), t.tab_text_active);
             job.wrap.max_width = right - left;
