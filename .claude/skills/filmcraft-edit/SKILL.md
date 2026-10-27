@@ -24,9 +24,11 @@ Full rules: `docs/vibezcut/WORKFLOW.md` in the VibezCut repo. House style: `stud
 8. Open it in VibezCut with `fc_open(path)` (or tell the user to open the .fcproj).
 
 ## Handoff packs (sending a project to an editor, or receiving one)
-- **Before an export or a pack** run `fc_preflight()`: a very large image (e.g. a 16000 px PNG logo) needs ~2 GB to
-  export and aborts VibezCut. Replace it with a smaller copy (`ffmpeg -i big.png -vf scale=3840:-2 small.png`, then
-  Replace Footage) before going on.
+- **Before an export or a pack** run `fc_preflight()`. VibezCut 0.2.10+ downscales a still over 16.8 MP when it loads
+  it (the layout does not change); older versions need ~2 GB for a 16000 px PNG logo and abort on export. If the
+  user is on an older version, replace such an image with a smaller copy (`ffmpeg -i big.png -vf scale=3840:-2
+  small.png`, then Replace Footage). Exports use the hardware encoder and GPU compositing by default (Auto, with
+  fallback); `hardwareEncoding: "off", gpuRendering: "off"` gives byte-identical output on every machine.
 - **Sending**: the user asks to pack/send it. The project must be saved. `fc_pack(out_dir, notes=..., extras=[script,
   cut report, units.json…], download_urls={file: link})` writes `<out_dir>/<name>.zip` (media is streamed into it: one
   copy on disk; `keep_folder=True` also leaves the folder; it refuses early if the drive lacks space): the project with

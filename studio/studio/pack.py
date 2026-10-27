@@ -140,7 +140,7 @@ def find_font_files(family: str) -> list[Path]:
 
 
 _IMG_EXT = {".png", ".jpg", ".jpeg", ".gif", ".bmp"}
-BIG_IMAGE_PIXELS = 40_000_000  # ~7000 x 5600: decoded as 32-bit float RGBA it needs ~640 MB, and VibezCut keeps it whole
+BIG_IMAGE_PIXELS = 1 << 24  # 16.8 MP: VibezCut 0.2.10+ downscales a bigger still when it loads it; older versions crash on export
 
 
 _PNG_SIG = bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
@@ -198,8 +198,9 @@ def preflight(project_path: str | Path) -> list[dict]:
             wh = image_size(p)
             if wh and wh[0] * wh[1] > BIG_IMAGE_PIXELS:
                 gb = wh[0] * wh[1] * 16 / 1e9
-                issues.append({"level": "error", "file": p.name, "problem": f"image is {wh[0]}x{wh[1]} px: it needs ~{gb:.1f} GB of memory "
-                               "to export and can crash VibezCut. Replace it with a smaller copy (4096 px on the long side is plenty for 4K)."})
+                issues.append({"level": "warning", "file": p.name, "problem": f"image is {wh[0]}x{wh[1]} px ({wh[0] * wh[1] / 1e6:.0f} MP; ~{gb:.1f} GB as float RGBA). "
+                               "VibezCut 0.2.10 and later downscale it when loading (the layout does not change); older versions run out of memory and crash "
+                               "on export. A smaller copy (4096 px on the long side is plenty for 4K) avoids both."})
     return issues
 
 

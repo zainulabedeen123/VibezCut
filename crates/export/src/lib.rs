@@ -370,12 +370,13 @@ pub struct ExportSettings {
     #[serde(default = "default_crf")]
     pub crf: f32,
     /// May H.264 be encoded by the system's hardware encoder (VideoToolbox on macOS, NVENC on
-    /// Windows)? Off unless asked for: hardware output depends on the machine, so it is not
-    /// byte-reproducible like the built-in encoder's (`determinism_tests`).
+    /// Windows)? Auto by default (VibezCut: much faster, and the software encoder takes over when
+    /// the hardware one declines). Hardware output depends on the machine, so it is not
+    /// byte-reproducible like the built-in encoder's (`determinism_tests`): choose Off for that.
     #[serde(default)]
     pub hardware_encoding: HardwareEncoding,
     /// Composite the exported frames on the GPU instead of the CPU reference renderer (Export ▸
-    /// GPU rendering: Auto / Off, Off by default). Off = the CPU reference renderer exactly.
+    /// GPU rendering: Auto / Off, Auto by default). Off = the CPU reference renderer exactly.
     #[serde(default)]
     pub gpu_rendering: GpuRendering,
     /// VBR maximum bitrate (None = 1.5 × target).
@@ -588,7 +589,7 @@ impl Default for ExportSettings {
             bitrate_mode: BitrateMode::default(),
             crf: DEFAULT_CRF,
             hardware_encoding: HardwareEncoding::default(),
-            gpu_rendering: GpuRendering::Off,
+            gpu_rendering: GpuRendering::default(),
             max_bitrate_kbps: None,
             adaptive_bitrate: None,
             keyframe_distance: None,

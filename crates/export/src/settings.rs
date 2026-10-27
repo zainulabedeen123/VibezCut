@@ -62,16 +62,17 @@ impl H264Profile {
 }
 
 /// Export ▸ Hardware encoding: whether H.264 may be encoded by the system's hardware video encoder
-/// (VideoToolbox on macOS, NVENC on NVIDIA GPUs on Windows) instead of FilmCraft's own encoder. Off
-/// by default: hardware encoders make different streams, and exports are otherwise byte-identical
-/// from run to run and machine to machine.
+/// (VideoToolbox on macOS, NVENC on NVIDIA GPUs on Windows) instead of FilmCraft's own encoder. Auto
+/// by default (VibezCut): the hardware encoder is several times faster, and it declines what it
+/// cannot do (the software encoder then runs). Hardware encoders make different streams than the
+/// built-in one: choose Off for output that is byte-identical from run to run and machine to machine.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum HardwareEncoding {
-    #[default]
     Off,
     /// Use the hardware encoder when the system has one and it takes the settings; otherwise the
     /// software encoder.
+    #[default]
     Auto,
 }
 
@@ -81,14 +82,21 @@ pub enum HardwareEncoding {
 /// way. On an effects-heavy edit it exports 2.4× (1080p) to 3.2× (4K) faster, and a single plain
 /// clip takes the same time (`docs/performance.md`). The GPU matches the CPU within the
 /// compositor's parity tolerance, not bit for bit, so an export's bytes can depend on the
-/// machine's GPU. Off = the CPU reference renderer, byte-reproducible everywhere; Off is the
-/// default (opt-in per export) until GPU export has been measured on Windows and macOS.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// machine's GPU. Off = the CPU reference renderer, byte-reproducible everywhere. Auto is the
+/// default (VibezCut): it only uses a GPU that is there, and the CPU renderer is the fallback.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum GpuRendering {
     Auto,
-    #[default]
     Off,
+}
+
+impl Default for GpuRendering {
+    /// Auto, except in this crate's own unit tests: they register fake GPU renderers in a
+    /// process-wide registry, and rely on plain settings meaning the CPU reference renderer.
+    fn default() -> Self {
+        if cfg!(test) { GpuRendering::Off } else { GpuRendering::Auto }
+    }
 }
 
 /// Bitrate encoding of bitrate-driven codecs (H.264).

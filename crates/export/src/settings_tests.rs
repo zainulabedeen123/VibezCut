@@ -1050,13 +1050,18 @@ fn tiff_size_estimate_tracks_alpha_and_real_output() {
 }
 
 #[test]
-fn gpu_rendering_is_off_by_default() {
-    assert_eq!(ExportSettings::default().gpu_rendering, crate::GpuRendering::Off);
+fn hardware_encoding_is_auto_by_default_and_both_can_be_turned_off() {
+    use crate::{GpuRendering, HardwareEncoding};
+    // (GPU rendering is Auto by default too, but not in this crate's own tests: see `GpuRendering::default`;
+    // the engine's `hardware_encoding_is_auto_unless_turned_off` checks it where the app's default applies)
+    assert_eq!(ExportSettings::default().hardware_encoding, HardwareEncoding::Auto);
     // settings saved before the field existed get the default too
     let s: ExportSettings = serde_json::from_value(serde_json::json!({"format": "h264"})).unwrap();
-    assert_eq!(s.gpu_rendering, crate::GpuRendering::Off);
-    let auto: ExportSettings = serde_json::from_value(serde_json::json!({"format": "h264", "gpuRendering": "auto"})).unwrap();
-    assert_eq!(auto.gpu_rendering, crate::GpuRendering::Auto);
+    assert_eq!(s.hardware_encoding, HardwareEncoding::Auto);
+    // and both can still be switched off for byte-reproducible output
+    let off: ExportSettings = serde_json::from_value(serde_json::json!({"format": "h264", "gpuRendering": "off", "hardwareEncoding": "off"})).unwrap();
+    assert_eq!(off.gpu_rendering, GpuRendering::Off);
+    assert_eq!(off.hardware_encoding, HardwareEncoding::Off);
 }
 
 /// Brief large peaks over a quiet bed exercise loudness lost during limiter release.
