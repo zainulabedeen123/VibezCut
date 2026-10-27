@@ -1,6 +1,6 @@
 # VibezCut Studio (Python 3.12). Install PyTorch with CUDA first:
 #   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
 faster-whisper>=1.2
-numpy
+numpy<2            # torch 2.4 wheels are built against NumPy 1.x
 pillow
-mcp>=1.16
+mcp>=1.16,<2      # 2.x renamed FastMCP

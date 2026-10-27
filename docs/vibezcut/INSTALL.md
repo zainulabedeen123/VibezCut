@@ -7,7 +7,7 @@
    Store Python: it is sandboxed and cannot see VibezCut's install folder. Then the studio packages:
    ```
    py -3 -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-   py -3 -m pip install faster-whisper numpy pillow "mcp>=1.16"
+   py -3 -m pip install faster-whisper "numpy<2" pillow "mcp>=1.16,<2"
    ```
    (needs an NVIDIA GPU for transcription; without one, live revisions still work)
 3. **ffmpeg** on PATH (`winget install Gyan.FFmpeg`).
