@@ -1,10 +1,11 @@
 name: VibezCut release (Windows)
 
-# Tag a version to publish a release:   git tag v0.1.0 && git push origin v0.1.0
+# Tag a version to publish a release:   git tag vibezcut-v0.1.0 && git push origin vibezcut-v0.1.0
+# (plain v* tags are FilmCraft's own releases, kept in the history for upstream merges)
 # Or run it by hand (Actions > VibezCut release > Run workflow) to get a build artifact only.
 on:
   push:
-    tags: ["v*"]
+    tags: ["vibezcut-v*"]
   workflow_dispatch:
     inputs:
       version:
@@ -33,7 +34,7 @@ jobs:
         id: ver
         shell: pwsh
         run: |
-          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}".TrimStart('v') } else { $v = "${{ inputs.version }}" }
+          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}" -replace '^vibezcut-v', '' } else { $v = "${{ inputs.version }}" }
           "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Output "VibezCut $v"
 

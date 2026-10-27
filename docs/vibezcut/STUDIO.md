@@ -56,7 +56,7 @@ and starts the editor with `--control 9876` (loopback only). The MCP server read
 - Local: `pwsh packaging/vibezcut/package.ps1 -Version 0.1.0` builds `VibezCut.exe` and
   `vibezcut-cli.exe` (static CRT) and writes `dist/vibezcut/VibezCut-<version>-windows-x64.zip`
   (+ `.sha256`): editor, CLI, launcher, `studio/`, docs, the Claude skill and the licenses.
-- CI: `.github/workflows/vibezcut-release.yml`. Push a tag (`git tag v0.1.0 && git push origin v0.1.0`)
+- CI: `.github/workflows/vibezcut-release.yml`. Push a tag (`git tag vibezcut-v0.1.0 && git push origin vibezcut-v0.1.0`; plain `v*` tags are FilmCraft's)
   and GitHub Actions builds on Windows, smoke-tests the CLI and publishes a GitHub Release with the zip.
   "Run workflow" by hand gives a build artifact without a release.
 - Branding lives in `crates/engine/src/vibezcut.rs` (name, version, data folder) and
