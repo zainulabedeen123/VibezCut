@@ -72,6 +72,72 @@ class _Names:
         return cand
 
 
+_NO_PROXY = {".wav", ".mp3", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".aif", ".aiff", ".jpg", ".jpeg", ".png", ".gif",
+             ".bmp", ".tif", ".tiff", ".webp", ".psd", ".svg", ".heic"}
+_BUNDLED_FONTS = {"inter", "jetbrains mono", "noto serif"}  # built into VibezCut: every install has them
+_FONT_SUFFIX = re.compile(r"\s*\((TrueType|OpenType)\)\s*$", re.I)
+
+
+def app_version() -> str:
+    """'VibezCut 0.2.8' from the install's VERSION.txt (empty when running from a source checkout)."""
+    here = Path(__file__).resolve()
+    for p in (here.parents[2] / "VERSION.txt", here.parents[3] / "VERSION.txt"):
+        try:
+            return p.read_text(encoding="utf-8").splitlines()[0].strip()
+        except (OSError, IndexError):
+            continue
+    return ""
+
+
+def fonts_used(doc: dict) -> list[str]:
+    """Font families named by text layers and character styles (the project stores names, not files)."""
+    out: set[str] = set()
+
+    def walk(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k in ("font", "family"):
+                    f = v.get("value", {}).get("Text") if isinstance(v, dict) and isinstance(v.get("value"), dict) else v
+                    if isinstance(f, str) and f.strip():
+                        out.add(f.strip())
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+    walk(doc)
+    return sorted(out, key=str.lower)
+
+
+def find_font_files(family: str) -> list[Path]:
+    """Installed files of a font family (Windows: from the registry font list; empty elsewhere)."""
+    try:
+        import winreg
+    except ImportError:
+        return []
+    found: list[Path] = []
+    want = family.lower()
+    sources = ((winreg.HKEY_LOCAL_MACHINE, Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"),
+               (winreg.HKEY_CURRENT_USER, Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Windows" / "Fonts"))
+    for hive, base in sources:
+        try:
+            with winreg.OpenKey(hive, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts") as k:
+                i = 0
+                while True:
+                    try:
+                        name, data, _ = winreg.EnumValue(k, i)
+                    except OSError:
+                        break
+                    i += 1
+                    fam = _FONT_SUFFIX.sub("", name).lower()
+                    if fam == want or fam.startswith(want + " "):
+                        fp = Path(data) if Path(data).is_absolute() else base / data
+                        if fp.is_file() and fp not in found:
+                            found.append(fp)
+        except OSError:
+            continue
+    return found
+
+
 def _walk_strings(o):
     if isinstance(o, dict):
         for v in o.values():
@@ -145,7 +211,8 @@ def pack(project_path, out_dir, *, make_client=None, include_media=False, proxy_
             say("proxies", f"copying {dst.name}")
             shutil.copyfile(_resolve(ref, base), dst)
             proxies[iid] = dst
-    need = [int(iid) for iid, it, m, p in real if iid not in proxies and p.exists() and iid.isdigit()]
+    need = [int(iid) for iid, it, m, p in real
+            if iid not in proxies and p.exists() and iid.isdigit() and p.suffix.lower() not in _NO_PROXY]
     if need and proxy_preset:
         if make_client is None:
             warnings.append("no connection to VibezCut: proxies were not created")
@@ -157,8 +224,9 @@ def pack(project_path, out_dir, *, make_client=None, include_media=False, proxy_
             job = r.get("job")
             for o in r.get("outputs") or []:
                 proxies[str(o["item"])] = Path(o["path"])
-            for s in r.get("skipped") or []:
-                warnings.append(f"proxy skipped: {s}")
+            for sk in r.get("skipped") or []:
+                if "no video" not in str(sk):  # audio and images need no proxy
+                    warnings.append(f"proxy skipped: {sk}")
             while job is not None:
                 js = c.run("jobs.list", {})
                 js = js if isinstance(js, list) else (js.get("jobs") if isinstance(js, dict) and "jobs" in js else [js])
@@ -211,6 +279,20 @@ def pack(project_path, out_dir, *, make_client=None, include_media=False, proxy_
     if external:
         warnings.append(f"{len(external)} other absolute path(s) in the project will be offline elsewhere (fonts, LUTs…): see manifest")
 
+    fonts = []
+    for fam in fonts_used(doc):
+        if fam.lower() in _BUNDLED_FONTS:
+            fonts.append({"family": fam, "bundled": True, "files": []})
+            continue
+        files = []
+        for fp in find_font_files(fam):
+            (root / "fonts").mkdir(exist_ok=True)
+            shutil.copyfile(fp, root / "fonts" / fp.name)
+            files.append("fonts/" + fp.name)
+        fonts.append({"family": fam, "bundled": False, "files": files})
+        warnings.append(f"font '{fam}': " + (f"{len(files)} file(s) copied to fonts/, install them on the editor's computer"
+                                             if files else "not found on this computer; without it text falls back to Inter"))
+
     pfile = f"{pname}.fcproj"
     (root / pfile).write_text(json.dumps(doc, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
 
@@ -223,6 +305,7 @@ def pack(project_path, out_dir, *, make_client=None, include_media=False, proxy_
         pass
     manifest = {"pack_version": PACK_VERSION, "created": datetime.now().isoformat(timespec="seconds"),
                 "project_file": pfile, "schema_version": doc.get("schema_version"), "generator": doc.get("generator"),
+                "vibezcut_version": app_version(), "fonts": fonts,
                 "sequence": {k: summary.get(k) for k in ("name", "duration_s", "tracks")},
                 "media": entries, "external_references": external, "warnings": warnings}
     hd = root / HANDOFF_DIR
@@ -260,7 +343,7 @@ def _handoff_md(name, manifest, include_media, notes, extras) -> str:
     seq = manifest.get("sequence") or {}
     dur = seq.get("duration_s")
     lines = [f"# Handoff: {name}", "",
-             f"Packed {manifest['created']} · {manifest.get('generator') or 'VibezCut'} · project format {manifest.get('schema_version')}", "",
+             f"Packed {manifest['created']} · {manifest.get('vibezcut_version') or manifest.get('generator') or 'VibezCut'} · project format {manifest.get('schema_version')}", "",
              "## For Claude: read this first",
              "1. Connect to VibezCut and call `fc_handoff()`: it shows what is missing and what was done so far.",
              "2. If media is missing, put the files in the `media` folder next to the project file, or call `fc_relink(folder)` with the folder they were downloaded to.",
@@ -275,6 +358,11 @@ def _handoff_md(name, manifest, include_media, notes, extras) -> str:
         lines.append(f"| {e['name']} | {_gb(e['size'] or 0)} | {'yes' if e['included'] else 'no: put it in `' + e['path'] + '`'} | "
                      f"{'yes' if e['proxy'] else 'no'} | {e.get('download_url') or ''} |")
     lines.append("")
+    custom = [f for f in manifest.get("fonts", []) if not f["bundled"]]
+    if custom:
+        lines += ["## Fonts", "Text layers use these fonts. Install them before opening the project, or the text falls back to Inter:"]
+        lines += [f"- {f['family']}: " + (", ".join(f"`{x}`" for x in f["files"]) if f["files"] else "NOT in this pack: ask the sender") for f in custom]
+        lines.append("")
     if extras:
         lines += ["## Other files in this folder", *[f"- `{x}`" for x in extras], ""]
     if manifest["warnings"]:

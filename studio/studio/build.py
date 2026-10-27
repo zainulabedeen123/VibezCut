@@ -29,8 +29,9 @@ TICKS = fc.TICKS
 
 
 class Builder:
-    def __init__(self, client, fps=60):
+    def __init__(self, client, fps=60, width=1920, height=1080):
         self.c, self.fps = client, fps
+        self.W, self.H = width, height  # Motion > Position is in sequence pixels: the centre is W/2, H/2
         self.ft = TICKS // fps
         self.log = []
 
@@ -47,7 +48,9 @@ class Builder:
         return self.run("effects.setParam", {"clip": clip, "effect": effect, "param": param, "value": value,
                                              "time": self.tk(t), "keyframe": True})
 
-    def fade(self, clip, t0, t1, fi=0.25, fo=0.2, rise=0, y=540, x=960):
+    def fade(self, clip, t0, t1, fi=0.25, fo=0.2, rise=0, y=None, x=None):
+        x = self.W / 2 if x is None else x
+        y = self.H / 2 if y is None else y
         if fi:
             self.key(clip, "opacity", "opacity", 0, t0)
             self.key(clip, "opacity", "opacity", 100, t0 + fi)
@@ -116,7 +119,7 @@ def build_project(edit_path, out_path=None, log=print):
     out_path = out_path or E.get("out") or str(Path(E["video"]).with_name(E.get("name", "Edit") + ".fcproj"))
     c = fc.Headless()
     try:
-        b = Builder(c, fps)
+        b = Builder(c, fps, E.get("width", 1920), E.get("height", 1080))
         b.run("file.newProject", {"name": E.get("name", "Edit")})
         imported = {}
 
