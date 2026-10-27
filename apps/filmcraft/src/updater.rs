@@ -3,7 +3,7 @@
 //! * `startup()` runs first in `main`: Velopack's install / update / uninstall hooks, and it
 //!   applies an update that was downloaded earlier before the app starts.
 //! * `start()` runs in the background once the app is up. When VibezCut was installed with
-//!   `VibezCut-Setup.exe` it checks the GitHub Releases of the VibezCut repository, downloads a
+//!   `VibezCut-Setup.exe` it reads the update feed of the latest VibezCut GitHub release, downloads a
 //!   newer version and tells the UI (`filmcraft_engine::vibezcut::UpdateState`), which offers
 //!   "Restart to update". An update that is not applied by a restart is applied on the next start.
 //! * After an install or an update it keeps Claude pointed at this version: the `filmcraft-edit`
@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, PoisonError};
-use velopack::sources::GithubSource;
+use velopack::sources::HttpSource;
 use velopack::{UpdateCheck, UpdateManager, VelopackApp, VelopackAsset};
 
 /// Velopack's start-up hooks. Must run before anything else: it may exit or restart the process.
@@ -36,7 +36,9 @@ static CHECKING: AtomicBool = AtomicBool::new(false);
 /// hooks behind Help ▸ Check for Updates and "Restart to update".
 pub fn start(data_root: Option<PathBuf>) {
     let spawned = std::thread::Builder::new().name("vibezcut-update".into()).spawn(move || {
-        let source = GithubSource::new(vibezcut::REPOSITORY, None, false);
+        // The latest release's files, straight from github.com (not the GitHub API, which allows
+        // only 60 unauthenticated requests an hour per network and then answers 403).
+        let source = HttpSource::new(format!("{}/releases/latest/download", vibezcut::REPOSITORY));
         let um = match UpdateManager::new(source, None, None) {
             Ok(um) => um,
             Err(e) => {
@@ -112,7 +114,7 @@ fn check(um: &UpdateManager) {
         }
         Err(e) => {
             log::warn!("updates: check failed: {e}");
-            vibezcut::set_update_state(UpdateState::Failed(format!("{e}. Check your internet connection and try again.")));
+            vibezcut::set_update_state(UpdateState::Failed(format!("{e}. Check your internet connection and try again later.")));
         }
     }
     CHECKING.store(false, Ordering::SeqCst);
