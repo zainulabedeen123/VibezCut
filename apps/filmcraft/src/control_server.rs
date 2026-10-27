@@ -31,7 +31,7 @@ pub fn start(port: u16, ctx: egui::Context) -> Receiver<ControlRequest> {
     start_with_token(port, ctx, std::env::var("FILMCRAFT_CONTROL_TOKEN").ok())
 }
 
-fn start_with_token(port: u16, ctx: egui::Context, token: Option<String>) -> Receiver<ControlRequest> {
+pub fn start_with_token(port: u16, ctx: egui::Context, token: Option<String>) -> Receiver<ControlRequest> {
     let (tx, rx) = channel::<ControlRequest>();
     // An inherited environment variable shares the credential with the owner's bridge process
     // without exposing it in command-line arguments, logs, or a shared discovery file.

@@ -346,9 +346,17 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
             app.hooks.menu_changed = Some(update);
             app.ui.show_menu_bar = false;
         }
+        let mut control_started = false;
         if let Some(port) = control_port {
             let rx = control_server::start(port, cc.egui_ctx.clone());
             app = if control_input_only { app.with_control_input_only(rx) } else { app.with_control(rx) };
+            control_started = true;
+        }
+        // VibezCut: every normal start is ready for Claude (no special launcher needed).
+        #[cfg(windows)]
+        if !control_started && let Some(token) = updater::claude_control_token() {
+            let rx = control_server::start_with_token(updater::CLAUDE_CONTROL_PORT, cc.egui_ctx.clone(), Some(token));
+            app = app.with_control(rx);
         }
         Ok(Box::new(app))
     })

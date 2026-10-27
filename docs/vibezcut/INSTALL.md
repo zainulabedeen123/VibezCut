@@ -23,8 +23,8 @@ if they weren't, it tries again on the next start.
 
 ## Every day
 
-- Start VibezCut from **`Start VibezCut (Claude control).bat`** in `%LocalAppData%\VibezCut\current`
-  when you want Claude to edit live in the window (the normal shortcut works too, without live control).
+- Start VibezCut from the normal shortcut. Every start is ready for Claude to edit live in the window
+  (loopback only, with a fresh secret token per session; set `VIBEZCUT_NO_CLAUDE=1` to turn it off).
 - Open Claude Code in your video's folder and say what you want ("edit this video", "change the
   title at 2:10", …).
 

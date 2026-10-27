@@ -47,9 +47,10 @@ VibezCut/
 
 ## Live editing
 
-Start the editor with **`Start VibezCut (Claude control).bat`** (drag a `.fcproj` onto it to open it).
-It makes a fresh 64-hex token per session, keeps it only in `%USERPROFILE%\.filmcraft-studio\control.token`
-and starts the editor with `--control 9876` (loopback only). The MCP server reads the token there.
+On Windows every normal start of VibezCut serves Claude: the first window makes a fresh 64-hex token,
+writes it to `%USERPROFILE%\.filmcraft-studio\control.token` and listens on 127.0.0.1:9876
+(`updater::claude_control_token`). The MCP server reads the token there. `VIBEZCUT_NO_CLAUDE=1` turns
+it off. **`Start VibezCut (Claude control).bat`** still works (explicit `--control 9876`).
 
 ## Builds and releases
 
