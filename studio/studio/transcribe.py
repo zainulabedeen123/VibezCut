@@ -24,11 +24,25 @@ SR = 16000
 _model = None
 
 
+def _preload_torch_cudnn():
+    """torch has to load its cuDNN before faster-whisper (ctranslate2) loads its own: the other way
+    round, the first torch call after a transcription (the take resolver) aborts the whole process
+    with 'Could not load symbol cudnnGetLibConfig. Error code 127'."""
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.nn.functional.conv1d(torch.zeros(1, 1, 8, device="cuda"), torch.zeros(1, 1, 3, device="cuda"))
+    except Exception:
+        pass  # no torch / no GPU: nothing to preload
+
+
 def model():
     global _model
     if _model is None:
-        from faster_whisper import WhisperModel
         s = config.settings()
+        if s["device"] == "cuda":
+            _preload_torch_cudnn()
+        from faster_whisper import WhisperModel
         _model = WhisperModel(s["whisper_model"], device=s["device"], compute_type="float16" if s["device"] == "cuda" else "int8")
     return _model
 
@@ -41,7 +55,7 @@ def asr(x: np.ndarray, prompt: str = VERBATIM, words: bool = False, beam: int = 
     text = " ".join(s.text.strip() for s in segs)
     if not words:
         return text
-    ws = [(w.word.strip(), w.start - 0.25, w.end - 0.25, w.probability) for s in segs for w in s.words]
+    ws = [(w.word.strip(), max(0.0, w.start - 0.25), max(0.0, w.end - 0.25), w.probability) for s in segs for w in s.words]
     return text, ws
 
 

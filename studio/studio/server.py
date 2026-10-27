@@ -238,20 +238,23 @@ def fc_move_clip(clip: int, start_seconds: float, track: str = "", target: str =
 
 @mcp.tool()
 def fc_trim(clip: int, edge: str, frames: int, ripple: bool = True, target: str = "live") -> dict:
-    """Trim a clip edge ("in" | "out") by frames (+ extend, - shorten); ripple keeps sync."""
+    """Move a clip edge ("in" | "out") by frames: + later in time (out: extends, in: shortens), - earlier;
+    ripple keeps sync. An edge cannot move past its neighbour or the source end (nothing changes)."""
     return _safe(lambda: ops.trim(_client(target), clip, edge, frames, ripple))
 
 
 @mcp.tool()
 def fc_tighten_cut(seconds: float, frames_out: int = 0, frames_in: int = 0, target: str = "live") -> dict:
     """Adjust the V1 edit nearest ``seconds``: frames_out on the outgoing clip's end,
-    frames_in on the incoming clip's start (negative removes frames, e.g. a pause or a breath)."""
+    frames_in on the incoming clip's start (negative removes frames, e.g. a pause or a breath).
+    If an overlay spans the cut, removing frames is done as a ripple delete on all tracks instead."""
     return _safe(lambda: ops.tighten_cut(_client(target), seconds, frames_out, frames_in))
 
 
 @mcp.tool()
 def fc_remove_range(start_seconds: float, end_seconds: float, target: str = "live") -> dict:
-    """Ripple-delete a timeline range (e.g. a repeated sentence) on the targeted tracks."""
+    """Ripple-delete a timeline range (e.g. a repeated sentence) on the targeted tracks. Needs
+    0 <= start < end. One call = 4 undo steps (the result says so): fc_undo(steps=4) reverts it."""
     return _safe(lambda: ops.remove_range(_client(target), start_seconds, end_seconds))
 
 
@@ -276,8 +279,14 @@ def fc_undo(steps: int = 1, target: str = "live"):
 @mcp.tool()
 def fc_save(path: str = "", target: str = "live") -> dict:
     """Save the project (to ``path`` when given). Headless targets must be saved to persist."""
-    r = _safe(lambda: ops.save(_client(target), path or None))
-    return r
+    def go():
+        c = _client(target)
+        r = ops.save(c, path or None)
+        if target == "live":  # Save As renames the project: this conversation keeps working on it
+            key, name, _, _ = _open_project(c)
+            _project.update(key=key, name=name)
+        return r
+    return _safe(go)
 
 
 @mcp.tool()

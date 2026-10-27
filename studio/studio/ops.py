@@ -75,6 +75,8 @@ def accent(c, clip, text, substring, color="#C8F040", layer=0):
 
 
 def move_clip(c, clip, start_s, track=None, fps=60):
+    if start_s < 0:
+        raise fc.FilmCraftError(f"start_seconds must be >= 0, not {start_s}, nothing was changed")
     mv = {"clip": clip, "time": fc.ticks(start_s, fps)}
     if not track:  # the engine needs a track per move: default to the clip's own
         for _, tr in _tracks(c.sequence()):
@@ -88,17 +90,27 @@ def move_clip(c, clip, start_s, track=None, fps=60):
 
 
 def trim(c, clip, edge, frames, ripple=True):
-    """Extend (+) or shorten (-) a clip edge by ``frames``. Ripple keeps everything after in sync."""
+    """Move a clip edge by ``frames``: + moves it later in time (out edge: extends the clip, in edge:
+    shortens it), - earlier. Ripple keeps everything after in sync."""
+    if edge not in ("in", "out"):
+        raise fc.FilmCraftError(f"edge must be 'in' or 'out', not {edge!r}")
     return c.run("timeline.trim", {"clip": clip, "edge": edge, "mode": "ripple" if ripple else "regular", "deltaFrames": frames})
 
 
 def tighten_cut(c, seconds, frames_out=0, frames_in=0):
     """Adjust the edit point nearest ``seconds`` on V1: frames_out trims the outgoing clip's end,
-    frames_in the incoming clip's start (negative = remove frames)."""
+    frames_in the incoming clip's start (negative = remove frames).
+
+    When a graphic or sound on another track spans the cut, a ripple trim is refused (it would push
+    that overlay out of sync). Removing frames then falls back to a ripple delete of the same span
+    on all tracks, which keeps everything in sync."""
     seq, t = c.sequence(), int(seconds * T)
     v1 = next(tr for _, tr in _tracks(seq, "video"))
     items = sorted(v1["items"], key=lambda i: i["start"])
+    if len(items) < 2:
+        raise fc.FilmCraftError("V1 has fewer than two clips, so there is no cut to tighten")
     k = min(range(len(items) - 1), key=lambda i: abs(items[i]["end"] - t))
+    cut = items[k]["end"]
     res = {}
     try:
         if frames_out:
@@ -106,25 +118,49 @@ def tighten_cut(c, seconds, frames_out=0, frames_in=0):
         if frames_in:
             res["in"] = trim(c, items[k + 1]["clip"], "in", -frames_in)
     except fc.FilmCraftError as e:
-        if "sync" in str(e):
-            raise fc.FilmCraftError(f"{e}. A graphic or sound on another track spans this cut, so a ripple "
-                                    "trim would push it out of sync. Trim that overlay too, or adjust the cut "
-                                    "with ripple=False and close the gap.") from e
-        raise
-    res["cut_s"] = round(items[k]["end"] / T, 3)
+        if "out" in res:  # never leave half of the edit applied
+            undo(c, 1)
+        removing = frames_out <= 0 and frames_in <= 0
+        if "sync" not in str(e) or not removing or items[k + 1]["start"] != cut:
+            raise
+        fr = (seq.get("settings") or {}).get("frame_rate") or {"num": 60, "den": 1}
+        frame_s = fr["den"] / fr["num"]
+        cut_s = cut / T
+        r = remove_range(c, cut_s - abs(frames_out) * frame_s, cut_s + abs(frames_in) * frame_s)
+        return {**r, "cut_s": round(cut_s, 3), "via": "ripple delete on all tracks (an overlay spans the cut)"}
+    res["cut_s"] = round(cut / T, 3)
     return res
 
 
 def remove_range(c, start_s, end_s):
-    """Ripple-delete a time range on all targeted tracks (e.g. a repeated phrase)."""
-    c.run("markers.markIn", {"seconds": start_s, "target": "program"})
-    c.run("markers.markOut", {"seconds": end_s, "target": "program"})
-    r = c.run("sequence.extract", {})
-    c.run("markers.clearInOut", {"target": "program"})
-    return r
+    """Ripple-delete a time range on all targeted tracks (e.g. a repeated phrase).
+
+    Needs 0 <= start < end (an end past the sequence end is clamped); anything else would delete
+    the wrong material. It takes ``undo_steps`` undo steps (mark in, mark out, extract, clear)."""
+    before = summary(c)["duration_s"]
+    if not (0 <= start_s < end_s):
+        raise fc.FilmCraftError(f"bad range {start_s}..{end_s}: need 0 <= start < end (seconds), nothing was changed")
+    if start_s >= before:
+        raise fc.FilmCraftError(f"range starts at {start_s}s, after the end of the sequence ({before}s), nothing was changed")
+    end_s = min(end_s, before)
+    fr = (c.sequence().get("settings") or {}).get("frame_rate") or {"num": 60, "den": 1}
+    out_s = end_s - fr["den"] / fr["num"]  # the Out mark is inclusive: mark the last frame to delete
+    if out_s < start_s:
+        raise fc.FilmCraftError(f"range {start_s}..{end_s} is shorter than one frame, nothing was changed")
+    try:
+        c.run("markers.markIn", {"seconds": start_s, "target": "program"})
+        c.run("markers.markOut", {"seconds": out_s, "target": "program"})
+        c.run("sequence.extract", {})
+    finally:  # never leave stray in/out marks behind, even when the delete is refused
+        c.run("markers.clearInOut", {"target": "program"})
+    return {"removed_s": round(before - summary(c)["duration_s"], 3), "undo_steps": 4}
 
 
 def clip_gain(c, clips, db, relative=False):
+    known = {i["clip"] for _, tr in _tracks(c.sequence()) for i in tr.get("items", [])}
+    missing = [x for x in clips if x not in known]
+    if missing:
+        raise fc.FilmCraftError(f"no clip {missing[0] if len(missing) == 1 else missing} in this sequence, nothing was changed")
     return c.run("clip.audioGain", {"clips": clips, "mode": "adjust" if relative else "set", "db": db})
 
 
