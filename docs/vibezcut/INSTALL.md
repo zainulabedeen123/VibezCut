@@ -3,7 +3,8 @@
 ## Once
 
 1. **Claude Code**: install it and sign in (https://claude.com/claude-code).
-2. **Python 3.12** (python.org installer, tick "Add python.exe to PATH"), then the studio packages:
+2. **Python 3.12** from the python.org installer (tick "Add python.exe to PATH"). Not the Microsoft
+   Store Python: it is sandboxed and cannot see VibezCut's install folder. Then the studio packages:
    ```
    py -3 -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
    py -3 -m pip install faster-whisper numpy pillow "mcp>=1.16"

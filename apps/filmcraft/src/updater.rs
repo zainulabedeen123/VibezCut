@@ -137,10 +137,12 @@ fn home_dir() -> Option<PathBuf> {
 
 /// The real python.exe behind `py` / `python` on PATH: the first one that has the studio's
 /// packages (`mcp`), else the first one found. Several Pythons side by side are common on Windows.
+/// The Microsoft Store Python is skipped: it is sandboxed and cannot see the files Setup installs
+/// under %LocalAppData% (the MCP server would fail to start).
 fn python_exe() -> Option<PathBuf> {
     const PROBE: &str = "import sys, importlib.util as u; print(sys.executable); print(u.find_spec('mcp') is not None)";
     let mut first = None;
-    for (cmd, pre) in [("python", vec![]), ("py", vec!["-3"]), ("python3", vec![])] {
+    for (cmd, pre) in [("py", vec!["-3"]), ("python", vec![]), ("python3", vec![])] {
         let mut c = Command::new(cmd);
         c.args(&pre).args(["-c", PROBE]);
         hide(&mut c);
@@ -152,7 +154,7 @@ fn python_exe() -> Option<PathBuf> {
         let mut lines = text.lines();
         let (Some(exe), Some(has_mcp)) = (lines.next(), lines.next()) else { continue };
         let p = PathBuf::from(exe.trim());
-        if !p.exists() {
+        if !p.exists() || exe.contains("\\WindowsApps\\") {
             continue;
         }
         if has_mcp.trim() == "True" {
