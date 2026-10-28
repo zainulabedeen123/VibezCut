@@ -882,6 +882,23 @@ fn builtin_presets_are_valid_and_unique() {
     assert_eq!(back.settings.adaptive_bitrate, Some(0.2));
 }
 
+/// VibezCut: the Quick Preview preset is a light, fast draft (720p, 30 fps, hardware encoder, GPU
+/// compositing) that is found by a loose name and is valid.
+#[test]
+fn quick_preview_preset_is_a_fast_720p_draft() {
+    let q = presets::find_builtin("quick preview 720p - fast draft").expect("the Quick Preview preset is built in");
+    assert_eq!(q.name, presets::QUICK_PREVIEW_PRESET);
+    q.settings.validate().unwrap();
+    assert_eq!(q.settings.format, Format::H264);
+    assert_eq!(q.settings.frame_size, Some((1280, 720)));
+    assert_eq!(q.settings.frame_rate, Some(FrameRate::FPS_30));
+    assert_eq!(q.settings.hardware_encoding, crate::HardwareEncoding::Auto);
+    assert_eq!(q.settings.gpu_rendering, crate::GpuRendering::Auto);
+    assert!(q.settings.bitrate_kbps <= 4_000 && q.settings.audio.bitrate_kbps <= 128);
+    // the default stays the full-quality Match Source preset
+    assert_eq!(builtin_presets()[0].name, presets::DEFAULT_PRESET);
+}
+
 /// #108: the default 320 kbps is more than AAC can carry in stereo at 22.05 kHz (6 bits per sample
 /// and channel). The export failed with "bitrate out of range"; it is now capped to the limit.
 #[test]

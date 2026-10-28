@@ -40,6 +40,9 @@ Full rules: `docs/vibezcut/WORKFLOW.md` in the VibezCut repo. House style: `stud
   `fc_relink(folder)` with the folder they were downloaded to. Do not re-transcribe the raw: the word-level
   transcript is already inside the project. At the end of a session call `fc_handoff(log="what you did / what is left")`.
 - Proxies are for editing only; export always uses the full-resolution files, so the raw must be linked before export.
+- **Client drafts**: for a quick review copy use `fc_command("file.exportMedia", {"preset": "Quick Preview 720p (fast draft)",
+  "path": ...})` (720p, 30 fps, hardware encoder, GPU compositing: much faster than the final export). The final
+  export uses a full-resolution preset such as `Match Source – Adaptive High Bitrate` or `YouTube 2160p 4K Ultra HD`.
 
 ## Revisions (project already delivered)
 - Never regenerate from edit.json once the user has the project: the .fcproj is the master.

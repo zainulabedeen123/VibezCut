@@ -46,6 +46,21 @@ fn h264(size: Option<(u32, u32)>, kbps: u32, max_kbps: u32) -> ExportSettings {
     }
 }
 
+/// Quick Preview (VibezCut): a draft for clients to review, made as fast as the pipeline allows. The
+/// output size sets the compositing size, so 720p is composited at 720p (not rendered at full size
+/// and scaled down); 30 fps renders half the frames of a 60 fps sequence.
+pub const QUICK_PREVIEW_PRESET: &str = "Quick Preview 720p (fast draft)";
+
+fn quick_preview() -> ExportSettings {
+    let mut s = h264(Some((1280, 720)), 4_000, 6_000);
+    s.frame_rate = Some(FrameRate::FPS_30);
+    s.audio.bitrate_kbps = 128;
+    s.hardware_encoding = crate::HardwareEncoding::Auto;
+    s.gpu_rendering = crate::GpuRendering::Auto;
+    s.max_render_quality = false;
+    s
+}
+
 fn adaptive(bpp: f32) -> ExportSettings {
     ExportSettings { adaptive_bitrate: Some(bpp), max_bitrate_kbps: None, ..h264(None, 10_000, 0) }
 }
@@ -99,6 +114,12 @@ pub fn builtin_presets() -> Vec<ExportPreset> {
     let vertical = ExportSettings { scaling: Scaling::ScaleToFill, ..h264(Some((1080, 1920)), 12_000, 16_000) };
     vec![
         p(DEFAULT_PRESET, ms, "H.264 at the sequence's frame size and rate; bitrate adapts to the frame size (0.2 bits per pixel)", adaptive(0.2)),
+        p(
+            QUICK_PREVIEW_PRESET,
+            "Quick Preview",
+            "Fast draft to share for review: H.264 1280×720 at 30 fps, 4 Mbps, AAC 128 kbps, hardware encoder and GPU compositing. The picture is composited at 720p, so it renders several times faster than the final export",
+            quick_preview(),
+        ),
         p("Match Source – Adaptive Medium Bitrate", ms, "H.264 at the sequence's frame size and rate; 0.1 bits per pixel", adaptive(0.1)),
         p("Match Source – Adaptive Low Bitrate", ms, "H.264 at the sequence's frame size and rate; 0.05 bits per pixel", adaptive(0.05)),
         p("High Quality 1080p HD", web, "H.264 1920×1080, VBR 1 pass, 20 Mbps target, AAC 320 kbps", h264(Some((1920, 1080)), 20_000, 24_000)),

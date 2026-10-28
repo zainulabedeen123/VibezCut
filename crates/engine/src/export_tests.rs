@@ -255,7 +255,12 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
         }
         let v = stream(&j, "video").unwrap_or_else(|| panic!("{name}: no video"));
         assert_eq!((v["width"].as_u64().unwrap(), v["height"].as_u64().unwrap()), (w, h), "{name}");
-        assert_eq!(v["r_frame_rate"], "24000/1001", "{name}");
+        // a preset may set its own frame rate (Quick Preview: 30 fps); else the sequence's
+        let rate = match settings["frameRate"].as_object() {
+            Some(r) => format!("{}/{}", r["num"], r["den"]),
+            None => "24000/1001".to_string(),
+        };
+        assert_eq!(v["r_frame_rate"].as_str(), Some(rate.as_str()), "{name}");
         let a = stream(&j, "audio").unwrap_or_else(|| panic!("{name}: no audio"));
         assert_eq!(a["sample_rate"], "48000", "{name}");
         assert_eq!(a["channels"], 2, "{name}");
@@ -267,7 +272,8 @@ fn every_builtin_preset_exports_and_ffprobe_confirms() {
                 assert_eq!(v["codec_name"], "h264", "{name}");
                 assert_eq!(v["profile"], "High", "{name}");
                 assert_eq!(a["codec_name"], "aac", "{name}");
-                assert!((num(&a["bit_rate"]) / 1000.0 - 320.0).abs() < 80.0, "{name}: AAC {}", a["bit_rate"]);
+                let aac = settings["audio"]["bitrateKbps"].as_f64().or(settings["audio"]["bitrate_kbps"].as_f64()).unwrap_or(320.0);
+                assert!((num(&a["bit_rate"]) / 1000.0 - aac).abs() < aac * 0.25, "{name}: AAC {} (want {aac} kbps)", a["bit_rate"]);
             }
             "prores" => {
                 assert!(fmt_name.contains("mov"), "{name}: {fmt_name}");
