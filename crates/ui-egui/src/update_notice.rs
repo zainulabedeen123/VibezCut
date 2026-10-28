@@ -13,10 +13,9 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
         return;
     };
     let t = app.tokens;
-    egui::Area::new(egui::Id::new("vibezcut.update_notice"))
-        .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-16.0, -40.0))
-        .order(egui::Order::Foreground)
-        .show(ctx, |ui| {
+    egui::Area::new(egui::Id::new("vibezcut.update_notice")).anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-16.0, -40.0)).order(egui::Order::Foreground).show(
+        ctx,
+        |ui| {
             egui::Frame::popup(ui.style()).inner_margin(egui::Margin::same(12)).show(ui, |ui| {
                 ui.set_width(300.0);
                 let (title, body) = match &state {
@@ -24,10 +23,9 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                         tlf!("{name} {version} is ready", name = vibezcut::NAME, version = v),
                         tl!("Restart to install it. Your project is offered for saving first.").to_string(),
                     ),
-                    UpdateState::Checking => (
-                        tl!("Checking for updates…").to_string(),
-                        tlf!("You have {name} {version}.", name = vibezcut::NAME, version = vibezcut::VERSION),
-                    ),
+                    UpdateState::Checking => {
+                        (tl!("Checking for updates…").to_string(), tlf!("You have {name} {version}.", name = vibezcut::NAME, version = vibezcut::VERSION))
+                    }
                     UpdateState::Downloading(v) => (
                         tlf!("Downloading {name} {version}…", name = vibezcut::NAME, version = v),
                         tl!("You can keep working; this card tells you when it's ready.").to_string(),
@@ -77,5 +75,6 @@ pub fn show(app: &mut FilmcraftApp, ctx: &egui::Context) {
                     }
                 });
             });
-        });
+        },
+    );
 }

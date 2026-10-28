@@ -73,7 +73,9 @@ pub fn header_badge(app: &mut FilmcraftApp, ui: &mut egui::Ui, right: f32, cente
             };
             (tl!("Claude").to_string(), tip)
         }
-        ClaudeLink::Ready => (tl!("Claude").to_string(), tl!("Ready for Claude: a Claude conversation that uses VibezCut connects to this window.").to_string()),
+        ClaudeLink::Ready => {
+            (tl!("Claude").to_string(), tl!("Ready for Claude: a Claude conversation that uses VibezCut connects to this window.").to_string())
+        }
         _ => (tl!("Claude: other window").to_string(), tl!("Claude works with another VibezCut window. Click to connect Claude to this window.").to_string()),
     };
     let p = ui.painter().clone();

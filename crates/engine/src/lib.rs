@@ -11,7 +11,6 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable))]
 
 pub mod aaf_omf;
-pub mod vibezcut;
 pub mod autosave;
 pub mod captions;
 pub mod clip_ops;
@@ -56,6 +55,7 @@ pub mod source_monitor;
 pub mod sync;
 pub mod transcript;
 pub mod trim;
+pub mod vibezcut;
 pub mod voiceover;
 
 use std::sync::Arc;

@@ -22,9 +22,7 @@ use velopack::{UpdateCheck, UpdateManager, VelopackApp, VelopackAsset};
 
 /// Velopack's start-up hooks. Must run before anything else: it may exit or restart the process.
 pub fn startup() {
-    VelopackApp::build()
-        .on_before_uninstall_fast_callback(|_| remove_claude_integration())
-        .run();
+    VelopackApp::build().on_before_uninstall_fast_callback(|_| remove_claude_integration()).run();
 }
 
 /// The downloaded update that "Restart to update" installs.
@@ -194,8 +192,7 @@ fn remove_claude_integration() {
 /// The skill folders shipped in `claude-skill\` next to the app (only names of real folders).
 fn bundled_skills(dir: &Path) -> Vec<String> {
     let Ok(entries) = std::fs::read_dir(dir.join("claude-skill")) else { return Vec::new() };
-    let mut names: Vec<String> =
-        entries.flatten().filter(|e| e.path().is_dir()).filter_map(|e| e.file_name().to_str().map(str::to_string)).collect();
+    let mut names: Vec<String> = entries.flatten().filter(|e| e.path().is_dir()).filter_map(|e| e.file_name().to_str().map(str::to_string)).collect();
     names.sort();
     names
 }
