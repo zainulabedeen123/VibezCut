@@ -37,7 +37,7 @@ pub struct GeneralPrefs {
     /// `zh-cn`, `de`, `ru`, `fr`, `id`, `it`, or `system` (the default: the operating system's preferred language when the
     /// interface has it, otherwise English).
     pub interface_language: String,
-    /// "At Startup": `showHome` (FilmCraft: the demo project), `openMostRecent`, `emptyProject`.
+    /// "At Startup": `showHome` (VibezCut: the projects screen, nothing loaded), `openMostRecent`, `emptyProject`.
     pub at_startup: String,
     /// "When Opening a Project": `showOpenDialog` | `showHome`.
     pub when_opening_project: String,
@@ -1536,7 +1536,8 @@ impl crate::autosave::Preferences {
         let r = &mut self.general.recent_projects;
         r.retain(|p| p != path);
         r.insert(0, path.to_string());
-        r.truncate(10);
+        // VibezCut: Home lists up to 50 projects (File > Open Recent shows the first ones)
+        r.truncate(50);
     }
 }
 

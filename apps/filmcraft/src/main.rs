@@ -106,7 +106,13 @@ fn main() -> eframe::Result {
     };
     let data_root = launch.data_dir.clone().or_else(default_data_dir);
     let log_dir = data_root.as_ref().map(|d| d.join(logging::LOG_DIR));
-    log::info!("VibezCut {} ({}) ({} {})", filmcraft_engine::vibezcut::VERSION, filmcraft_engine::vibezcut::BASED_ON, std::env::consts::OS, std::env::consts::ARCH);
+    log::info!(
+        "VibezCut {} ({}) ({} {})",
+        filmcraft_engine::vibezcut::VERSION,
+        filmcraft_engine::vibezcut::BASED_ON,
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    );
     // The log file lives next to the crash logs; opened after the arguments, so `--help`,
     // `--version` and usage errors leave no file behind. Records logged until now go in first.
     if let Some(logger) = logger {
@@ -225,6 +231,7 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
         // voice-over recording reads the microphone through cpal
         session.voiceover.input = Some(Box::new(audio_in::CpalIn::new(&session.prefs.audio_hardware.device_class)));
         let (project, media) = args::project_and_media(&files);
+        let mut show_home = false;
         if let Some(p) = project {
             if let Err(e) = session.execute("file.open", json!({"path": p})) {
                 log::error!("{e}");
@@ -243,6 +250,9 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
                 }
             }
         } else if !startup_flag && session.prefs.general.at_startup == "emptyProject" {
+        } else if !startup_flag && session.prefs.general.at_startup == "showHome" {
+            // VibezCut: start on Home (the projects screen) with nothing loaded
+            show_home = true;
         } else if demo {
             let _ = session.execute("file.openDemoProject", json!({}));
         }
@@ -257,6 +267,9 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
             }
         }
         let mut app = FilmcraftApp::new(session);
+        if show_home && media.is_empty() {
+            app.ui.mode = filmcraft_ui_egui::state::Mode::Home;
+        }
         app.graphics_notice = notice;
         if recover == Some(false) {
             app.dialog = None;
@@ -354,7 +367,9 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
         }
         // VibezCut: every normal start can work with Claude (no special launcher needed).
         #[cfg(windows)]
-        if control_port.is_none() && let Some(rx) = claude_link::start(cc.egui_ctx.clone()) {
+        if control_port.is_none()
+            && let Some(rx) = claude_link::start(cc.egui_ctx.clone())
+        {
             app = app.with_control(rx);
         }
         Ok(Box::new(app))

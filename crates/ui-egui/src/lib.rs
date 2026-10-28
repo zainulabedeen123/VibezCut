@@ -42,10 +42,9 @@ mod dock_ui;
 /// Thumbnail textures kept before the least recently used are freed (each is up to 320 px wide).
 const MAX_THUMB_TEXTURES: usize = 512;
 
+pub mod claude_indicator;
 pub mod frames;
 pub mod graphics_notice;
-pub mod update_notice;
-pub mod claude_indicator;
 pub mod header;
 pub mod i18n;
 pub mod icons;
@@ -63,6 +62,7 @@ pub mod source_playback;
 pub mod state;
 pub mod theme;
 mod theme_favorites;
+pub mod update_notice;
 pub mod widgets;
 
 use std::collections::HashMap;
@@ -1892,6 +1892,7 @@ impl FilmcraftApp {
         let body = egui::Rect::from_min_max(egui::pos2(full.min.x + 1.0, header.max.y + 1.0), egui::pos2(full.max.x - 1.0, full.max.y - status_h - 2.0));
         match self.ui.mode {
             state::Mode::Edit => self.dock_area(ui, body),
+            state::Mode::Home => panels::home::show(self, ui, body),
             state::Mode::Import => panels::import_mode::show(self, ui, body),
             state::Mode::Export => panels::export_mode::show(self, ui, body),
         }

@@ -38,7 +38,10 @@ You get a zip. Unzip it anywhere, then:
 
 ## Every day
 
-- Start VibezCut from the normal shortcut. Every start is ready for Claude to edit live in the window
+- Start VibezCut from the normal shortcut. It opens on **Home**: your projects as cards, last opened first
+  (thumbnail, size, duration); click one to open it, or **New project**. The Home icon (top left) brings it back.
+  Settings > General > At Startup chooses another start (open the most recent project, or an empty one).
+- Every start is ready for Claude to edit live in the window
   (loopback only, with a fresh secret token per session; set `VIBEZCUT_NO_CLAUDE=1` to turn it off).
 - Open Claude Code in your video's folder and say what you want ("edit this video", "change the
   title at 2:10", …).

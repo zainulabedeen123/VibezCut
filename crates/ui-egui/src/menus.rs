@@ -434,6 +434,10 @@ pub fn invoke(app: &mut FilmcraftApp, ctx: &egui::Context, id: &str, mut params:
             let zoom = app.reset_ui_zoom(ctx);
             return Ok(json!({"zoom": zoom}));
         }
+        "mode.home" => {
+            app.ui.mode = Mode::Home;
+            return Ok(Value::Null);
+        }
         "mode.import" => {
             app.ui.mode = Mode::Import;
             return Ok(Value::Null);
