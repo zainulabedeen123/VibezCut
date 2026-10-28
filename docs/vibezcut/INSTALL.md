@@ -3,23 +3,28 @@
 ## Once
 
 1. **Claude Code**: install it and sign in (https://claude.com/claude-code).
-2. **Python 3.12** from the python.org installer (tick "Add python.exe to PATH"). Not the Microsoft
-   Store Python: it is sandboxed and cannot see VibezCut's install folder. Then the studio packages:
-   ```
-   py -3 -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-   py -3 -m pip install faster-whisper "numpy<2" pillow "mcp>=1.16,<2"
-   ```
-   (needs an NVIDIA GPU for transcription; without one, live revisions still work)
-3. **ffmpeg** on PATH (`winget install Gyan.FFmpeg`).
-4. **VibezCut**: download `VibezCut-win-Setup.exe` from the latest release
+2. **VibezCut**: download `VibezCut-win-Setup.exe` from the latest release
    (https://github.com/zainulabedeen123/VibezCut/releases/latest) and run it. Windows may show
    "Windows protected your PC" (the installer is not code-signed yet): More info > Run anyway.
    It installs to `%LocalAppData%\VibezCut` (no admin rights) with Start menu and desktop shortcuts.
 
-On its first start VibezCut connects itself to Claude: it copies the `filmcraft-edit` skill to
+That is all for editing with Claude: VibezCut ships its own private Python for the Claude tools.
+On its first start it copies the Claude skills (`filmcraft-edit`, `pack-for-editor`) to
 `%USERPROFILE%\.claude\skills` and registers the `filmcraft-studio` MCP server for your user
-(`claude mcp get filmcraft-studio` should say Connected). This needs steps 1 and 2 done first;
-if they weren't, it tries again on the next start.
+(`claude mcp get filmcraft-studio` should say Connected; restart Claude Code after the first start).
+If Claude Code was installed after VibezCut, it tries again on the next start.
+
+### Optional: transcription add-on (for cutting raw recordings)
+
+Only the person who turns raw footage into the first cut needs this (an NVIDIA GPU is required):
+**Python 3.12** from the python.org installer (tick "Add python.exe to PATH"; not the Microsoft Store
+Python), then
+```
+py -3 -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+py -3 -m pip install faster-whisper "numpy<2" pillow "mcp>=1.16,<2"
+```
+and **ffmpeg** on PATH (`winget install Gyan.FFmpeg`). Restart VibezCut and Claude: when a Python with
+these packages is found, VibezCut uses it instead of the bundled one.
 
 ## When you receive a project
 

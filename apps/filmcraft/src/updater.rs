@@ -135,21 +135,24 @@ fn sync_claude_integration(data_root: &Path) {
         return;
     }
     let mut ok = true;
-    // the editing skill
+    // the Claude skills: every folder in claude-skill\ (filmcraft-edit, pack-for-editor, ...)
     match home_dir() {
         Some(home) => {
-            let from = dir.join("claude-skill").join("filmcraft-edit");
-            let to = home.join(".claude").join("skills").join("filmcraft-edit");
-            if let Err(e) = copy_dir(&from, &to) {
-                log::warn!("claude: skill not installed: {e}");
-                ok = false;
+            for name in bundled_skills(&dir) {
+                let from = dir.join("claude-skill").join(&name);
+                let to = home.join(".claude").join("skills").join(&name);
+                if let Err(e) = copy_dir(&from, &to) {
+                    log::warn!("claude: skill {name} not installed: {e}");
+                    ok = false;
+                }
             }
         }
         None => ok = false,
     }
-    // the MCP server, run by the user's Python (full path: a bare `python` can be a Store alias)
+    // the MCP server, run by the user's Python if it has the studio packages, else by the Python
+    // bundled with VibezCut (full path: a bare `python` can be a Store alias)
     let server = dir.join("studio").join("run_server.py");
-    match python_exe() {
+    match python_exe(&dir) {
         Some(py) if server.exists() => {
             let _ = run_hidden("cmd", &["/C", "claude", "mcp", "remove", "--scope", "user", "filmcraft-studio"]);
             let args = ["/C", "claude", "mcp", "add", "--scope", "user", "filmcraft-studio", "--"];
@@ -178,19 +181,36 @@ fn sync_claude_integration(data_root: &Path) {
 fn remove_claude_integration() {
     let _ = run_hidden("cmd", &["/C", "claude", "mcp", "remove", "--scope", "user", "filmcraft-studio"]);
     if let Some(home) = home_dir() {
-        let _ = std::fs::remove_dir_all(home.join(".claude").join("skills").join("filmcraft-edit"));
+        let mut names = app_dir().map(|d| bundled_skills(&d)).unwrap_or_default();
+        if !names.iter().any(|n| n == "filmcraft-edit") {
+            names.push("filmcraft-edit".to_string());
+        }
+        for name in names {
+            let _ = std::fs::remove_dir_all(home.join(".claude").join("skills").join(name));
+        }
     }
+}
+
+/// The skill folders shipped in `claude-skill\` next to the app (only names of real folders).
+fn bundled_skills(dir: &Path) -> Vec<String> {
+    let Ok(entries) = std::fs::read_dir(dir.join("claude-skill")) else { return Vec::new() };
+    let mut names: Vec<String> =
+        entries.flatten().filter(|e| e.path().is_dir()).filter_map(|e| e.file_name().to_str().map(str::to_string)).collect();
+    names.sort();
+    names
 }
 
 fn home_dir() -> Option<PathBuf> {
     std::env::var_os("USERPROFILE").filter(|v| !v.is_empty()).map(PathBuf::from)
 }
 
-/// The real python.exe behind `py` / `python` on PATH: the first one that has the studio's
-/// packages (`mcp`), else the first one found. Several Pythons side by side are common on Windows.
-/// The Microsoft Store Python is skipped: it is sandboxed and cannot see the files Setup installs
-/// under %LocalAppData% (the MCP server would fail to start).
-fn python_exe() -> Option<PathBuf> {
+/// The Python that runs the MCP server: the real python.exe behind `py` / `python` on PATH that
+/// has the studio's packages (`mcp`; a full studio install also does transcription), else the
+/// private Python bundled in `python\` next to the app (live editing, no transcription), else the
+/// first Python found. Several Pythons side by side are common on Windows. The Microsoft Store
+/// Python is skipped: it is sandboxed and cannot see the files Setup installs under %LocalAppData%
+/// (the MCP server would fail to start).
+fn python_exe(dir: &Path) -> Option<PathBuf> {
     const PROBE: &str = "import sys, importlib.util as u; print(sys.executable); print(u.find_spec('mcp') is not None)";
     let mut first = None;
     for (cmd, pre) in [("py", vec!["-3"]), ("python", vec![]), ("python3", vec![])] {
@@ -212,6 +232,10 @@ fn python_exe() -> Option<PathBuf> {
             return Some(p);
         }
         first.get_or_insert(p);
+    }
+    let bundled = dir.join("python").join("python.exe");
+    if bundled.is_file() {
+        return Some(bundled);
     }
     first
 }

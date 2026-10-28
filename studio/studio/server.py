@@ -82,12 +82,33 @@ def _safe(fn):
 
 
 # ============================================================================ pipeline
+AI_ADDON = ("This step needs the transcription add-on, which is not installed for the Python running the "
+            "VibezCut tools (missing: {mod}). Live editing works without it. To transcribe and cut raw footage, "
+            "install python.org Python 3.12 with: py -3 -m pip install torch torchaudio --index-url "
+            "https://download.pytorch.org/whl/cu124 and py -3 -m pip install faster-whisper \"numpy<2\" pillow "
+            "\"mcp>=1.16,<2\" (needs an NVIDIA GPU), plus ffmpeg on PATH; then restart VibezCut and Claude.")
+
+
+def _pipeline(video, fn):
+    """Pipeline steps need a real recording and the transcription add-on (PyTorch, faster-whisper)."""
+    if not Path(video).is_file():
+        return {"error": f"video not found: {video}"}
+    try:
+        return fn()
+    except ModuleNotFoundError as e:
+        return {"error": AI_ADDON.format(mod=e.name)}
+    except FileNotFoundError as e:
+        if "ffmpeg" in str(e).lower() or getattr(e, "filename", "") == "ffmpeg":
+            return {"error": "ffmpeg is not installed (winget install Gyan.FFmpeg), then restart Claude."}
+        raise
+
+
 @mcp.tool()
 def studio_transcribe(video: str, terms: str = "") -> dict:
     """Extract audio and transcribe a raw recording verbatim (stutters kept). Writes
     chunks.json / phrases.json / transcript.txt in <video dir>/_studio/<name>/. ``terms`` adds
     product names to the prompt (e.g. the product or brand names said in the video). Takes a few minutes per hour."""
-    return transcribe.run(video, terms)
+    return _pipeline(video, lambda: transcribe.run(video, terms))
 
 
 @mcp.tool()
@@ -124,11 +145,13 @@ def studio_save_units(video: str, units: list) -> dict:
 def studio_resolve(video: str, only: list[int] | None = None) -> dict:
     """Find frame-safe cut points for every unit (judged by transcription + forced alignment).
     ``only`` re-resolves just those unit indexes. Returns BAD units to fix. Log: resolve.log."""
-    lines = []
-    r = takes.resolve_all(video, only=set(only) if only else None, log=lines.append)
-    (config.workdir(video) / "resolve.log").write_text("\n".join(lines), encoding="utf-8")
-    r["log_tail"] = [l for l in lines if l.startswith("BAD") or "DUP" in l][:40]
-    return r
+    def go():
+        lines = []
+        r = takes.resolve_all(video, only=set(only) if only else None, log=lines.append)
+        (config.workdir(video) / "resolve.log").write_text("\n".join(lines), encoding="utf-8")
+        r["log_tail"] = [l for l in lines if l.startswith("BAD") or "DUP" in l][:40]
+        return r
+    return _pipeline(video, go)
 
 
 @mcp.tool()
@@ -136,9 +159,11 @@ def studio_assemble(video: str, removals: list[list[float]] | None = None) -> di
     """Build timeline pieces from the resolved units, render the edited dialogue and verify it:
     the whole edit is re-transcribed and immediate repeats / restarts are listed with times.
     ``removals`` = [[src_t0, src_t1], ...] source-time spans to cut out inside a unit (a stutter)."""
-    p = assemble.build_pieces(video, removals or [])
-    v = assemble.verify(video)
-    return {**p, "verify": v["path"], "issues": v["issues"][:60], "edited_duration": v["duration"]}
+    def go():
+        p = assemble.build_pieces(video, removals or [])
+        v = assemble.verify(video)
+        return {**p, "verify": v["path"], "issues": v["issues"][:60], "edited_duration": v["duration"]}
+    return _pipeline(video, go)
 
 
 @mcp.tool()
