@@ -1,0 +1,24 @@
+{
+ "name": "Neon Minimal",
+ "for": "Tech, tutorials, YouTube and Shorts",
+ "description": "Poppins Bold, 3-4 words, the spoken word glows teal, slides up softly.",
+ "font": "Poppins",
+ "style": "Bold",
+ "size": 70,
+ "case": "none",
+ "max_words": 4,
+ "max_chars": 26,
+ "words_per_line": 4,
+ "color": "#F2F4F8",
+ "highlight": "word",
+ "highlight_color": "#2CF2D2",
+ "shadow": {
+  "color": "#000000",
+  "opacity": 75,
+  "distance": 3,
+  "blur": 14
+ },
+ "animation": "slide",
+ "y": 0.78,
+ "line_height": 1.1
+}

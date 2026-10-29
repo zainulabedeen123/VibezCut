@@ -172,3 +172,27 @@ SHA-256 (`crates/speech/src/models.rs`, `docs/transcripts.md`).
 | Asset | Author | Source | Licence |
 |---|---|---|---|
 | Whisper tiny / base / small speech-recognition weights (`model.safetensors`, `config.json`, `generation_config.json`, `tokenizer.json`) | OpenAI | `https://huggingface.co/openai/whisper-{tiny,base,small}` (revisions `169d4a43…`, `e37978b9…`, `973afd24…`); weights released with `https://github.com/openai/whisper` | MIT (weights and code, github.com/openai/whisper); the Hugging Face conversion is labelled Apache-2.0 |
+
+## Caption fonts (VibezCut installer only)
+
+Not in the repository: `packaging/vibezcut/bundle-fonts.ps1` downloads them at packaging time from the pinned
+commits in `packaging/vibezcut/fonts-lock.json` (SHA-256 checked) into the installer's `fonts\<Family>\`
+folder, with each family's licence file next to it. Static TTFs from Google Fonts
+(`github.com/google/fonts`), Montserrat from `github.com/JulietaUla/Montserrat`.
+
+| Family (weights) | Author | Licence |
+|---|---|---|
+| Montserrat (Bold, ExtraBold, Black) | The Montserrat Project Authors | OFL-1.1 |
+| Poppins (Bold, ExtraBold, Black) | The Poppins Project Authors (Indian Type Foundry) | OFL-1.1 |
+| Anton | The Anton Project Authors | OFL-1.1 |
+| Bebas Neue | Dharma Type | OFL-1.1 |
+| Archivo Black | The Archivo Black Project Authors (Omnibus-Type) | OFL-1.1 |
+| Kanit (Bold, ExtraBold, Black) | The Kanit Project Authors (Cadson Demak) | OFL-1.1 |
+| Barlow (Bold, ExtraBold, Black), Barlow Condensed (ExtraBold, Black) | The Barlow Project Authors (Jeremy Tribby) | OFL-1.1 |
+| Lato (Bold, Black) | Łukasz Dziedzic (tyPoland) | OFL-1.1 |
+| Bangers | The Bangers Project Authors (Vernon Adams) | OFL-1.1 |
+| Luckiest Guy | Astigmatic | Apache-2.0 |
+| Lilita One | Juan Montoreano | OFL-1.1 |
+| Titan One | Rodrigo Fuenzalida | OFL-1.1 |
+| Paytone One | The Paytone Project Authors | OFL-1.1 |
+| Permanent Marker | Font Diner | Apache-2.0 |

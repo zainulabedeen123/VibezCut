@@ -1,0 +1,24 @@
+{
+ "name": "Clean Subtitle",
+ "for": "YouTube long form",
+ "description": "Inter SemiBold sentence case, up to 8 words, soft shadow, low on screen, gentle fade. Classic readable subtitles.",
+ "font": "Inter",
+ "style": "SemiBold",
+ "size": 50,
+ "case": "none",
+ "max_words": 8,
+ "max_chars": 44,
+ "words_per_line": 99,
+ "color": "#FFFFFF",
+ "highlight": "none",
+ "shadow": {
+  "opacity": 80,
+  "distance": 3,
+  "blur": 10
+ },
+ "animation": "fade",
+ "y": 0.88,
+ "line_height": 1.15,
+ "strip_punct": false,
+ "max_width": 0.8
+}

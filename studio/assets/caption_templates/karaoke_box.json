@@ -1,0 +1,28 @@
+{
+ "name": "Karaoke Box",
+ "for": "Shorts, Reels, TikTok, YouTube",
+ "description": "Poppins ExtraBold, 3-4 words, a rounded colour box slides under the spoken word.",
+ "font": "Poppins",
+ "style": "ExtraBold",
+ "size": 82,
+ "case": "none",
+ "max_words": 4,
+ "max_chars": 24,
+ "words_per_line": 4,
+ "color": "#FFFFFF",
+ "highlight": "box",
+ "box_color": "#7C4DFF",
+ "box_text_color": "#FFFFFF",
+ "stroke": {
+  "color": "#000000",
+  "width": 5
+ },
+ "shadow": {
+  "opacity": 60,
+  "distance": 4,
+  "blur": 10
+ },
+ "animation": "pop",
+ "y": 0.74,
+ "line_height": 1.1
+}

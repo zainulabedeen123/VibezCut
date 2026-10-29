@@ -1,0 +1,27 @@
+{
+ "name": "Punchy Green",
+ "for": "Shorts, Reels, TikTok",
+ "description": "Poppins Black UPPERCASE, 1-2 words at a time, green active word, pop-in. Fast-paced talking heads.",
+ "font": "Poppins",
+ "style": "Black",
+ "size": 104,
+ "case": "upper",
+ "max_words": 2,
+ "max_chars": 14,
+ "words_per_line": 2,
+ "color": "#FFFFFF",
+ "highlight": "word",
+ "highlight_color": "#3CF06E",
+ "stroke": {
+  "color": "#000000",
+  "width": 8
+ },
+ "shadow": {
+  "opacity": 65,
+  "distance": 5,
+  "blur": 10
+ },
+ "animation": "pop",
+ "y": 0.7,
+ "line_height": 1.0
+}

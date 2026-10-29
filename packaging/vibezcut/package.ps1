@@ -13,6 +13,7 @@
     docs\                                 STUDIO.md, WORKFLOW.md
     claude-skill\                         the Claude skills (filmcraft-edit, pack-for-editor)
     python\                               private Python 3.12 for the MCP server (live editing; no transcription)
+    fonts\                                caption fonts (OFL / Apache 2.0, licence next to each family)
     LICENSE-MIT, LICENSE-APACHE, NOTICE, ATTRIBUTION.md
 
   The binaries link the C runtime statically, so no Visual C++ redistributable is needed.
@@ -24,7 +25,8 @@
 param(
   [string] $Version = $env:VIBEZCUT_VERSION,
   [switch] $SkipBuild,
-  [switch] $SkipPython
+  [switch] $SkipPython,
+  [switch] $SkipFonts
 )
 $ErrorActionPreference = 'Stop'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -73,6 +75,15 @@ foreach ($skill in 'filmcraft-edit', 'pack-for-editor') {
 if (-not $SkipPython) {
   & (Join-Path $PSScriptRoot 'bundle-python.ps1') -Dest (Join-Path $Stage 'python') -PyVersion '3.12.10' `
     -Sha256 '4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3'
+}
+# caption fonts, loaded at startup from <exe dir>\fonts
+if (-not $SkipFonts) {
+  & (Join-Path $PSScriptRoot 'bundle-fonts.ps1') -Dest (Join-Path $Stage 'fonts')
+  # Inter is compiled into VibezCut; the caption tools also need the files to measure text
+  $Inter = Join-Path $Stage 'fonts\Inter'
+  New-Item -ItemType Directory -Force -Path $Inter | Out-Null
+  Copy-Item (Join-Path $Root 'assets\fonts\Inter-*.ttf') $Inter
+  Copy-Item (Join-Path $Root 'assets\fonts\OFL-Inter.txt') (Join-Path $Inter 'OFL.txt')
 }
 foreach ($f in 'LICENSE-MIT', 'LICENSE-APACHE', 'NOTICE', 'ATTRIBUTION.md') { Copy-Item (Join-Path $Root $f) $Stage }
 $Base = (Select-String -Path (Join-Path $Root 'Cargo.toml') -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value

@@ -1387,3 +1387,21 @@ mod source_placement_tests;
 mod frame_export_tests;
 #[cfg(test)]
 mod wasm_clock_tests;
+
+/// VibezCut: register the fonts bundled with the app (the `fonts` folder next to the executable,
+/// and `VIBEZCUT_FONTS_DIR` when set) before anything renders text, so captions and titles look the
+/// same on every installation. Returns the number of faces added (families already known are kept).
+pub fn load_bundled_fonts() -> usize {
+    let mut dirs: Vec<std::path::PathBuf> = Vec::new();
+    if let Some(d) = std::env::var_os("VIBEZCUT_FONTS_DIR").filter(|v| !v.is_empty()) {
+        dirs.push(std::path::PathBuf::from(d));
+    }
+    if let Some(exe_dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(std::path::Path::to_path_buf)) {
+        dirs.push(exe_dir.join("fonts"));
+    }
+    dirs.retain(|d| d.is_dir());
+    if dirs.is_empty() {
+        return 0;
+    }
+    filmcraft_text::fonts::add_source(&filmcraft_text::fonts::DirectorySource { dirs })
+}

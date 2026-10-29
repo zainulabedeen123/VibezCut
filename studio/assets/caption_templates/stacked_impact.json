@@ -1,0 +1,25 @@
+{
+ "name": "Stacked Impact",
+ "for": "Shorts, Reels, TikTok, hooks",
+ "description": "Huge UPPERCASE words stacked one per line, revealed line by line, the newest line in yellow (like 'UNIQUE / BOLD / CAPTIONS').",
+ "font": "Montserrat",
+ "style": "Black",
+ "size": 150,
+ "case": "upper",
+ "max_words": 3,
+ "max_chars": 24,
+ "words_per_line": 1,
+ "color": "#FFFFFF",
+ "highlight": "last_line",
+ "highlight_color": "#FFD93B",
+ "highlight_mode": "reveal",
+ "shadow": {
+  "opacity": 85,
+  "distance": 8,
+  "blur": 18
+ },
+ "animation": "pop",
+ "y": 0.72,
+ "line_height": 0.92,
+ "tracking": -20
+}

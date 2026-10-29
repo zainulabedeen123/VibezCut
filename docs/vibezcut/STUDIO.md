@@ -35,6 +35,17 @@ VibezCut/
       └─ server.py      the MCP tools
 ```
 
+## Captions
+
+`studio_captions(video, template, corrections, keywords)` captions the cut that is open in VibezCut from the
+recording's word-level transcript: native text clips on a "Captions" track, every word editable, with the
+template's word highlight and animation. Eight templates ship in `studio/assets/caption_templates/` (JSON,
+keys documented in the README there): Bold Pop, Punchy Green, Karaoke Box, Stacked Impact, Editorial Tight,
+Comic Pop, Neon Minimal, Clean Subtitle. Their fonts (Montserrat, Poppins, Anton, Bebas Neue, Bangers, Kanit,
+Barlow, Lato, Luckiest Guy and more, all OFL/Apache) are installed with VibezCut in `<app>onts` and show
+up in the font list of the text tools; `packaging/vibezcut/bundle-fonts.ps1` fetches them from
+`fonts-lock.json`. `VIBEZCUT_FONTS_DIR` adds another folder (development).
+
 ## Setup (until the installer exists)
 
 1. Editor binaries: either build this repo (`cargo build --release -p filmcraft -p filmcraft-cli`,

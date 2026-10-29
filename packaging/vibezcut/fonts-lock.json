@@ -1,0 +1,287 @@
+{
+ "google_fonts_commit": "9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0",
+ "montserrat_commit": "555facfb2a18c72c3c0380f0d9c0f060453a9058",
+ "files": [
+  {
+   "family": "Montserrat",
+   "url": "https://raw.githubusercontent.com/JulietaUla/Montserrat/555facfb2a18c72c3c0380f0d9c0f060453a9058/fonts/ttf/Montserrat-Bold.ttf",
+   "file": "Montserrat/Montserrat-Bold.ttf",
+   "sha256": "bc6e854971cea46b463be6f9eef4d9cd52f51cfc1fc0dd90c9d3e6483dc0ec61",
+   "bytes": 454864
+  },
+  {
+   "family": "Montserrat",
+   "url": "https://raw.githubusercontent.com/JulietaUla/Montserrat/555facfb2a18c72c3c0380f0d9c0f060453a9058/fonts/ttf/Montserrat-ExtraBold.ttf",
+   "file": "Montserrat/Montserrat-ExtraBold.ttf",
+   "sha256": "d3ac6a843d3ba6d5cafd44cf39e437055c8aed7e261010f595f57d3c7b3e2c1b",
+   "bytes": 455468
+  },
+  {
+   "family": "Montserrat",
+   "url": "https://raw.githubusercontent.com/JulietaUla/Montserrat/555facfb2a18c72c3c0380f0d9c0f060453a9058/fonts/ttf/Montserrat-Black.ttf",
+   "file": "Montserrat/Montserrat-Black.ttf",
+   "sha256": "ea67b37f8776eebea135cd1fe9adeaf6f9427683e8dc11ab8398b6be5f102c60",
+   "bytes": 462844
+  },
+  {
+   "family": "Montserrat",
+   "url": "https://raw.githubusercontent.com/JulietaUla/Montserrat/555facfb2a18c72c3c0380f0d9c0f060453a9058/OFL.txt",
+   "file": "Montserrat/OFL.txt",
+   "sha256": "8b7141c03fa4f8d44e6345d5d4931709290f0f67875e452e95ac1fd3a027802e",
+   "bytes": 4400
+  },
+  {
+   "family": "Poppins",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/poppins/Poppins-Bold.ttf",
+   "file": "Poppins/Poppins-Bold.ttf",
+   "sha256": "983676516167748b74de6f4771fb384c664fd913acb8b471122ecacf5da5ea6c",
+   "bytes": 155996
+  },
+  {
+   "family": "Poppins",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/poppins/Poppins-ExtraBold.ttf",
+   "file": "Poppins/Poppins-ExtraBold.ttf",
+   "sha256": "f2ab17c1a63a0ecc12c2461848fc8a469395e3cd2d641803e889c643d9f958e1",
+   "bytes": 154836
+  },
+  {
+   "family": "Poppins",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/poppins/Poppins-Black.ttf",
+   "file": "Poppins/Poppins-Black.ttf",
+   "sha256": "d82aaaf98a9283f9a8edd24e51173337d8eaf09e25cd3d98831f8ec8461748a1",
+   "bytes": 153440
+  },
+  {
+   "family": "Poppins",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/poppins/OFL.txt",
+   "file": "Poppins/OFL.txt",
+   "sha256": "6be04893d770899a015649c7aa3b582f871b272f8747a92b78b17c3e5c8b2573",
+   "bytes": 4385
+  },
+  {
+   "family": "Anton",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/anton/Anton-Regular.ttf",
+   "file": "Anton/Anton-Regular.ttf",
+   "sha256": "a4ba3a92350ebb031da0cb47630ac49eb265082ca1bc0450442f4a83ab947cab",
+   "bytes": 170812
+  },
+  {
+   "family": "Anton",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/anton/OFL.txt",
+   "file": "Anton/OFL.txt",
+   "sha256": "ee67e6ee22790b7929f1a3769ca2801d565c64b5a9096942c1adf5596de9c9e4",
+   "bytes": 4484
+  },
+  {
+   "family": "BebasNeue",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/bebasneue/BebasNeue-Regular.ttf",
+   "file": "BebasNeue/BebasNeue-Regular.ttf",
+   "sha256": "08e4623805102d819f58601e46e345648846075e363b2ceb23313c2d1c83ec73",
+   "bytes": 61400
+  },
+  {
+   "family": "BebasNeue",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/bebasneue/OFL.txt",
+   "file": "BebasNeue/OFL.txt",
+   "sha256": "72082f6cb4d04be2ecf7cc7d9e1e7d73787f0af8a5a278a47cade70c16b78341",
+   "bytes": 4337
+  },
+  {
+   "family": "ArchivoBlack",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/archivoblack/ArchivoBlack-Regular.ttf",
+   "file": "ArchivoBlack/ArchivoBlack-Regular.ttf",
+   "sha256": "dd9a89a019b4849f66ab75455fe7bdf931311042cbb0f0f97acc061539703180",
+   "bytes": 90988
+  },
+  {
+   "family": "ArchivoBlack",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/archivoblack/OFL.txt",
+   "file": "ArchivoBlack/OFL.txt",
+   "sha256": "3173acd82f8c6159b5b1037b539fcbd4edff68e65c2ea8b9412b5a5ca97b08ff",
+   "bytes": 4492
+  },
+  {
+   "family": "Kanit",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/kanit/Kanit-Bold.ttf",
+   "file": "Kanit/Kanit-Bold.ttf",
+   "sha256": "5dec5b080dab13de9d2295437c0ff3ec05c9e75587dfc31358c005eb4efa5e70",
+   "bytes": 176136
+  },
+  {
+   "family": "Kanit",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/kanit/Kanit-ExtraBold.ttf",
+   "file": "Kanit/Kanit-ExtraBold.ttf",
+   "sha256": "70082870d1f5bb6ae9faa708572b2c36de3c076caae187edae753f709d0de984",
+   "bytes": 177836
+  },
+  {
+   "family": "Kanit",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/kanit/Kanit-Black.ttf",
+   "file": "Kanit/Kanit-Black.ttf",
+   "sha256": "5d290c2cc9926764bd782aa6abc47a8f55bd64641d0afb56e115ee522698ee7e",
+   "bytes": 176856
+  },
+  {
+   "family": "Kanit",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/kanit/OFL.txt",
+   "file": "Kanit/OFL.txt",
+   "sha256": "eb998cc5a685b240cdb46a0b5747e70334c8c57bbd7b1f6b044d75719358df67",
+   "bytes": 4383
+  },
+  {
+   "family": "Barlow",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/barlow/Barlow-Bold.ttf",
+   "file": "Barlow/Barlow-Bold.ttf",
+   "sha256": "84e6a4d61e7c3e21f3c50ea6a4f7e5303a3467864c038be6ea3759bab8d547f9",
+   "bytes": 108220
+  },
+  {
+   "family": "Barlow",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/barlow/Barlow-ExtraBold.ttf",
+   "file": "Barlow/Barlow-ExtraBold.ttf",
+   "sha256": "5234d91030e1bb89525cbaccc4386892c3fe005a0582c705264ce3572d96a1a1",
+   "bytes": 110228
+  },
+  {
+   "family": "Barlow",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/barlow/Barlow-Black.ttf",
+   "file": "Barlow/Barlow-Black.ttf",
+   "sha256": "fc4f74e8475b181003f7597450c62d630622b417e367a6842972b286c49f9440",
+   "bytes": 111116
+  },
+  {
+   "family": "Barlow",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/barlow/OFL.txt",
+   "file": "Barlow/OFL.txt",
+   "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+   "bytes": 4377
+  },
+  {
+   "family": "BarlowCondensed",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/barlowcondensed/BarlowCondensed-ExtraBold.ttf",
+   "file": "BarlowCondensed/BarlowCondensed-ExtraBold.ttf",
+   "sha256": "724c9c25952d5f4a2d87185d9767aa006144c5f0d944dc05bf7d5d603551c260",
+   "bytes": 110296
+  },
+  {
+   "family": "BarlowCondensed",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/barlowcondensed/BarlowCondensed-Black.ttf",
+   "file": "BarlowCondensed/BarlowCondensed-Black.ttf",
+   "sha256": "e74b750df582c608f35db467b711b2b60d2217618e85e60b72b42dfd00446cab",
+   "bytes": 110828
+  },
+  {
+   "family": "BarlowCondensed",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/barlowcondensed/OFL.txt",
+   "file": "BarlowCondensed/OFL.txt",
+   "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+   "bytes": 4377
+  },
+  {
+   "family": "Lato",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/lato/Lato-Bold.ttf",
+   "file": "Lato/Lato-Bold.ttf",
+   "sha256": "8a0aace75d33794eece4b28187bfc1df0bbd2888b5d8a56e01788c8d65d16be1",
+   "bytes": 656544
+  },
+  {
+   "family": "Lato",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/lato/Lato-Black.ttf",
+   "file": "Lato/Lato-Black.ttf",
+   "sha256": "808c62839c62dbce7de689af7603666fc7f8b81e0df537d8a5212c87580d4337",
+   "bytes": 664748
+  },
+  {
+   "family": "Lato",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/lato/OFL.txt",
+   "file": "Lato/OFL.txt",
+   "sha256": "74ba064d03f1f1c4a952da936c3eb71866c34404916734de3cae73b34357e59e",
+   "bytes": 4407
+  },
+  {
+   "family": "Bangers",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/bangers/Bangers-Regular.ttf",
+   "file": "Bangers/Bangers-Regular.ttf",
+   "sha256": "4160a7311de9342674cce9160cde9fcbb30f48190397d86ff1b70b455af65824",
+   "bytes": 93148
+  },
+  {
+   "family": "Bangers",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/bangers/OFL.txt",
+   "file": "Bangers/OFL.txt",
+   "sha256": "630dd5a307c0657b094d324e069b390edf90182fe5003639e06c02a0e5769af7",
+   "bytes": 4479
+  },
+  {
+   "family": "LuckiestGuy",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/apache/luckiestguy/LuckiestGuy-Regular.ttf",
+   "file": "LuckiestGuy/LuckiestGuy-Regular.ttf",
+   "sha256": "cfbdd68a039f92df51cf3721506af6242e64594c6325fe0bedbeff3fe385d980",
+   "bytes": 73320
+  },
+  {
+   "family": "LuckiestGuy",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/apache/luckiestguy/LICENSE.txt",
+   "file": "LuckiestGuy/LICENSE.txt",
+   "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+   "bytes": 11358
+  },
+  {
+   "family": "LilitaOne",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/lilitaone/LilitaOne-Regular.ttf",
+   "file": "LilitaOne/LilitaOne-Regular.ttf",
+   "sha256": "f5b641c45c69d772ee4eda687bc9fda411d5cad6b0b45371491da4580cbc8d59",
+   "bytes": 28092
+  },
+  {
+   "family": "LilitaOne",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/lilitaone/OFL.txt",
+   "file": "LilitaOne/OFL.txt",
+   "sha256": "255d5debbb80eb2ea762644311f266a279e8778f00156655a516e2b7781a63e1",
+   "bytes": 4392
+  },
+  {
+   "family": "TitanOne",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/titanone/TitanOne-Regular.ttf",
+   "file": "TitanOne/TitanOne-Regular.ttf",
+   "sha256": "563ff6de179bbd44bcd7d2a6c448d6dc3bf935834237cf1250e506e65cd86ff1",
+   "bytes": 55712
+  },
+  {
+   "family": "TitanOne",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/titanone/OFL.txt",
+   "file": "TitanOne/OFL.txt",
+   "sha256": "61be7c29f4835e2be7243db12213d75d53ff028f29f4b493212a1688b1d3a1ba",
+   "bytes": 4418
+  },
+  {
+   "family": "PaytoneOne",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/paytoneone/PaytoneOne-Regular.ttf",
+   "file": "PaytoneOne/PaytoneOne-Regular.ttf",
+   "sha256": "1c07073b0b578199b54c7866d55e2b631d285e8aa4bb4fbc08809d980cd49b14",
+   "bytes": 114648
+  },
+  {
+   "family": "PaytoneOne",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/ofl/paytoneone/OFL.txt",
+   "file": "PaytoneOne/OFL.txt",
+   "sha256": "12404fcefccc3cb964cb2406510ba679b30f7d7ae689db08df5b455ae24b3feb",
+   "bytes": 4446
+  },
+  {
+   "family": "PermanentMarker",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/apache/permanentmarker/PermanentMarker-Regular.ttf",
+   "file": "PermanentMarker/PermanentMarker-Regular.ttf",
+   "sha256": "28f82c8a7943cb8e9d599f8554da1d4fc75dbcf69b9885ad6c0611d20c6946c5",
+   "bytes": 74632
+  },
+  {
+   "family": "PermanentMarker",
+   "url": "https://raw.githubusercontent.com/google/fonts/9862abc066c9b83bf84c3e8ed1fc2d8d48f9bbf0/apache/permanentmarker/LICENSE.txt",
+   "file": "PermanentMarker/LICENSE.txt",
+   "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+   "bytes": 11358
+  }
+ ],
+ "note": "Open-licensed (SIL OFL 1.1 / Apache 2.0) static fonts bundled in fonts\\ by bundle-fonts.ps1; pinned by commit and SHA-256."
+}

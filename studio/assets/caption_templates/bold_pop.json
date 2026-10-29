@@ -1,0 +1,28 @@
+{
+ "name": "Bold Pop",
+ "for": "Shorts, Reels, TikTok, hooks",
+ "description": "Big UPPERCASE Montserrat Black, 2-3 words, black outline, the spoken word turns yellow, pop-in.",
+ "font": "Montserrat",
+ "style": "Black",
+ "size": 96,
+ "case": "upper",
+ "max_words": 3,
+ "max_chars": 18,
+ "words_per_line": 3,
+ "color": "#FFFFFF",
+ "highlight": "word",
+ "highlight_color": "#FFE14D",
+ "stroke": {
+  "color": "#000000",
+  "width": 9
+ },
+ "shadow": {
+  "opacity": 70,
+  "distance": 6,
+  "blur": 10
+ },
+ "animation": "pop",
+ "y": 0.72,
+ "line_height": 1.02,
+ "tracking": -10
+}

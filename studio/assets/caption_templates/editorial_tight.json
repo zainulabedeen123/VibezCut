@@ -1,0 +1,26 @@
+{
+ "name": "Editorial Tight",
+ "for": "Reels, TikTok, aesthetic edits",
+ "description": "Tight Inter Bold, 2-3 words over two lines, the last word small and raised (like 'Teachers / won't make'), soft shadow.",
+ "font": "Inter",
+ "style": "Bold",
+ "size": 118,
+ "case": "none",
+ "max_words": 3,
+ "max_chars": 22,
+ "words_per_line": 2,
+ "color": "#FFFFFF",
+ "highlight": "none",
+ "small_last_word": true,
+ "small_scale": 0.45,
+ "shadow": {
+  "opacity": 55,
+  "distance": 4,
+  "blur": 16
+ },
+ "animation": "scale_fade",
+ "y": 0.7,
+ "line_height": 0.86,
+ "tracking": -60,
+ "first_line_words": 1
+}

@@ -44,6 +44,20 @@ Full rules: `docs/vibezcut/WORKFLOW.md` in the VibezCut repo. House style: `stud
   "path": ...})` (720p, 30 fps, hardware encoder, GPU compositing: much faster than the final export). The final
   export uses a full-resolution preset such as `Match Source – Adaptive High Bitrate` or `YouTube 2160p 4K Ultra HD`.
 
+## Captions (YouTube, Shorts, Reels, TikTok)
+- `studio_caption_templates()` lists the styles: bold_pop (Hormozi-style yellow word), punchy_green, karaoke_box
+  (word in a moving box), stacked_impact (UPPERCASE stack, last line yellow), editorial_tight (tight two lines,
+  small raised last word), comic_pop, neon_minimal, clean_subtitle (long-form YouTube). Ask which one if the
+  user did not say; Shorts/Reels/TikTok suit the bold ones, a 10-minute YouTube video suits clean_subtitle.
+- `studio_captions(video=<raw recording>, template, corrections={"Data Impulse": "DataImpulse"},
+  keywords=["DataImpulse", "$1"])` works on the open project (live). It follows the cut already on the
+  timeline, puts native text clips on a "Captions" video track (made on top if missing; re-running replaces
+  it) and every word stays editable (`fc_find_text` / `fc_set_text`, or by hand in VibezCut). Check the
+  transcript's spelling of names and products first and pass them as `corrections`. `start`/`end` caption
+  only part of the timeline (seconds).
+- Look at two or three frames with `fc_frame` afterwards. Templates are JSON in `studio/assets/caption_templates/`
+  (README there lists every key); the fonts they use ship with VibezCut 0.2.14+.
+
 ## Revisions (project already delivered)
 - Never regenerate from edit.json once the user has the project: the .fcproj is the master.
 - Prefer live: `fc_status()`. Every normal VibezCut start works with Claude; the window Claude works

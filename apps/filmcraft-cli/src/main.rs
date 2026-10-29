@@ -290,6 +290,8 @@ fn absolute(path: &str) -> String {
 
 #[tokio::main]
 async fn main() {
+    // VibezCut: the fonts bundled next to the app, so headless renders match the editor
+    filmcraft_engine::load_bundled_fonts();
     cli().await;
     if STDOUT_ERROR.load(Ordering::Relaxed) {
         std::process::exit(1);

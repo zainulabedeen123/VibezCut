@@ -74,7 +74,10 @@ class _Names:
 
 _NO_PROXY = {".wav", ".mp3", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".aif", ".aiff", ".jpg", ".jpeg", ".png", ".gif",
              ".bmp", ".tif", ".tiff", ".webp", ".psd", ".svg", ".heic"}
-_BUNDLED_FONTS = {"inter", "jetbrains mono", "noto serif"}  # built into VibezCut: every install has them
+# built into VibezCut or shipped in its fonts folder (packaging/vibezcut/fonts-lock.json): every install has them
+_BUNDLED_FONTS = {"inter", "jetbrains mono", "noto serif", "montserrat", "poppins", "anton", "bebas neue",
+                  "archivo black", "kanit", "barlow", "barlow condensed", "lato", "bangers", "luckiest guy",
+                  "lilita one", "titan one", "paytone one", "permanent marker"}
 _FONT_SUFFIX = re.compile(r"\s*\((TrueType|OpenType)\)\s*$", re.I)
 
 

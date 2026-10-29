@@ -87,6 +87,9 @@ fn main() -> eframe::Result {
     updater::startup();
     // First, so the panic hook and every start-up record are logged (`logging`).
     let logger = logging::install();
+    // VibezCut: the fonts bundled next to the app (captions templates use them)
+    let fonts = filmcraft_engine::load_bundled_fonts();
+    log::info!("bundled fonts: {fonts} faces");
     // lossy, so a value that is not Unicode is reported like any other bad port instead of ignored
     let env_port = std::env::var_os("FILMCRAFT_CONTROL_PORT").map(|p| p.to_string_lossy().into_owned());
     let launch = match args::parse(env_port, std::env::args_os().skip(1)) {

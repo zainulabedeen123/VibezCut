@@ -15,7 +15,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP, Image
 
-from . import assemble, build, config, fc, ops, pack, takes, transcribe
+from . import assemble, build, captions, config, fc, ops, pack, takes, transcribe
 
 mcp = FastMCP("filmcraft-studio")
 _conn: dict = {}
@@ -172,6 +172,27 @@ def studio_build_project(edit_json: str, out: str = "") -> dict:
     cuts with linked audio, camera keyframes, stems, stills, clips, native text, accent bars,
     and the verbatim transcript in FilmCraft's Text panel. FilmCraft does not need to be open."""
     return build.build_project(edit_json, out or None)
+
+
+@mcp.tool()
+def studio_caption_templates() -> list:
+    """The caption templates (id, name, what they suit, look). Pick one for studio_captions."""
+    return captions.list_templates()
+
+
+@mcp.tool()
+def studio_captions(video: str, template: str, corrections: dict | None = None, keywords: list[str] | None = None,
+                    replace: bool = True, start: float | None = None, end: float | None = None) -> dict:
+    """Add captions to the project open in VibezCut, in a caption template's style, on a "Captions" video
+    track: native text clips, every word editable, with the template's highlight and animation. ``video``
+    is the raw recording (its verbatim transcript gives the word times; they follow the cut on the
+    timeline, manual edits included). ``corrections`` fixes words ({"Data Impulse": "DataImpulse"} or
+    {"geo": "Rio"}); ``keywords`` are coloured with the template's highlight colour (brand, prices).
+    ``replace`` clears the Captions track first; ``start``/``end`` (timeline seconds) caption a part only."""
+    def go():
+        c = _client("live")
+        return captions.apply(c, video, template, corrections=corrections, keywords=keywords, replace=replace, start=start, end=end)
+    return _safe(go)
 
 
 # ============================================================================ FilmCraft (live / file)
