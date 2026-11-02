@@ -11,14 +11,32 @@ import numpy as np
 from . import config
 
 
+def ffmpeg(src, out, *opts):
+    """Run ffmpeg on ``src`` into ``out``.
+
+    ffmpeg gets none of our stdio: under the stdio MCP server those handles are the JSON-RPC pipes,
+    and an ffmpeg that inherited them hung there for 30 minutes (it also reads stdin as key commands).
+    Output goes to a temp file renamed on success, so an interrupted run never leaves a truncated
+    ``out`` that later calls would take as done."""
+    out = Path(out)
+    tmp = out.with_name(out.stem + ".part" + out.suffix)
+    r = subprocess.run(["ffmpeg", "-nostdin", "-hide_banner", "-y", "-v", "error", "-i", str(src), *opts, str(tmp)],
+                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    if r.returncode:
+        tmp.unlink(missing_ok=True)
+        err = r.stderr.decode("utf-8", "replace").strip()[-800:]
+        raise RuntimeError(f"ffmpeg failed on {src} (exit {r.returncode}): {err}")
+    tmp.replace(out)
+
+
 def extract(video: str | Path) -> dict:
     """16 kHz mono (analysis) and 48 kHz stereo (final mix) WAVs + 10 ms dB envelope."""
     wd = config.workdir(video)
     a16, a48 = wd / "audio16k.wav", wd / "audio48k.wav"
     if not a16.exists():
-        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-vn", "-ac", "1", "-ar", "16000", str(a16)], check=True)
+        ffmpeg(video, a16, "-vn", "-ac", "1", "-ar", "16000")
     if not a48.exists():
-        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-vn", "-ac", "2", "-ar", "48000", "-c:a", "pcm_s16le", str(a48)], check=True)
+        ffmpeg(video, a48, "-vn", "-ac", "2", "-ar", "48000", "-c:a", "pcm_s16le")
     dbf = wd / "db.npy"
     if not dbf.exists():
         a = load16(a16)

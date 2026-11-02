@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
 import wave
 from pathlib import Path
 
@@ -82,7 +81,7 @@ def verify(video):
     wd = config.workdir(video)
     p = render_dialogue(video)
     a16 = wd / "edit16k.wav"
-    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", p, "-ar", "16000", "-ac", "1", str(a16)], check=True)
+    audio.ffmpeg(p, a16, "-ar", "16000", "-ac", "1")
     a = audio.load16(a16)
     segs, _ = transcribe.model().transcribe(a, language="en", word_timestamps=True, vad_filter=False,
                                             condition_on_previous_text=False, beam_size=5, temperature=0,

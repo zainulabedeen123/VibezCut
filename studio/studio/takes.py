@@ -255,6 +255,30 @@ def words_for_align(t):
     return [w.strip("'") for w in t.split() if w.strip("'")]
 
 
+def _out_of_memory(e: BaseException) -> bool:
+    """MKL ("mkl_malloc: failed to allocate memory"), CUDA and Python allocation failures."""
+    m = str(e).lower()
+    return isinstance(e, MemoryError) or "alloc" in m or "out of memory" in m
+
+
+def _free_memory():
+    import gc
+    gc.collect()
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
+
+
+def _save(p: Path, data):
+    """Atomic write: a crash mid-write must not corrupt the units resolved so far."""
+    tmp = p.with_name(p.name + ".tmp")
+    tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
+    tmp.replace(p)
+
+
 def resolve_all(video, units_path=None, only=None, log=print):
     wd = config.workdir(video)
     units = json.loads(Path(units_path or wd / "units.json").read_text(encoding="utf-8"))
@@ -264,11 +288,23 @@ def resolve_all(video, units_path=None, only=None, log=print):
     for i, u in enumerate(units):
         if only is not None and i not in only:
             continue
-        r = R.resolve(u)
+        # The models leave little headroom on a busy machine: an allocation can fail on one unit.
+        # Free what we can and retry once; if it still fails, mark just this unit BAD and go on.
+        for attempt in (1, 2):
+            try:
+                r = R.resolve(u)
+                break
+            except Exception as e:
+                if not _out_of_memory(e):
+                    raise
+                R.cache.clear()
+                _free_memory()
+                r = {"ok": False, "error": f"out of memory: {e}"}
         r["i"] = i
         prev[str(i)] = r
+        _save(out_p, prev)  # after every unit, so a crash never loses the units already resolved
         flag = "OK " if r.get("ok") else "BAD"
-        log(f"{flag} {i:3d} [{r.get('S', 0):8.2f}-{r.get('E', 0):8.2f}] {'DUP ' + str(r['dups']) if r.get('dups') else ''}| {r.get('t', '')[:110]}")
-    out_p.write_text(json.dumps(prev, indent=1), encoding="utf-8")
+        log(f"{flag} {i:3d} [{r.get('S', 0):8.2f}-{r.get('E', 0):8.2f}] {'DUP ' + str(r['dups']) if r.get('dups') else ''}"
+            f"| {r.get('error') or r.get('t', '')[:110]}")
     bad = [k for k, v in prev.items() if not v.get("ok")]
     return {"resolved": len(prev), "bad": bad, "path": str(out_p)}
