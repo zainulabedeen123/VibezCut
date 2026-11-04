@@ -189,12 +189,28 @@ STAGE="$WORK/dmg"
 mkdir -p "$STAGE"
 ditto "$APP" "$STAGE/VibezCut.app"
 ln -s /Applications "$STAGE/Applications"
-rm -f "$DMG" "$WORK/raw.dmg"
-# makehybrid + convert builds the image without attaching a device (`create -srcfolder` is flaky
-# on CI runners).
-hdiutil makehybrid -hfs -hfs-volume-name "VibezCut $VZ_VERSION" -hfs-openfolder "$STAGE" -o "$WORK/raw.dmg" "$STAGE"
-hdiutil convert "$WORK/raw.dmg" -format UDZO -imagekey zlib-level=9 -o "$DMG"
-rm -f "$WORK/raw.dmg"
+rm -f "$DMG"
+# `create -srcfolder`, not `makehybrid -hfs`: makehybrid gives every file an empty
+# com.apple.FinderInfo xattr, which `codesign --verify --strict` (and so Gatekeeper on a downloaded
+# copy) rejects as "detritus". create can fail on CI runners with "Resource busy", so retry it.
+dmg_ok=0
+for attempt in 1 2 3 4 5; do
+  if hdiutil create -volname "VibezCut $VZ_VERSION" -srcfolder "$STAGE" -fs HFS+ -format UDZO \
+    -imagekey zlib-level=9 -ov "$DMG"; then
+    dmg_ok=1
+    break
+  fi
+  warn "hdiutil create failed (attempt $attempt), retrying"
+  rm -f "$DMG"
+  sleep $((attempt * 5))
+done
+[[ "$dmg_ok" = 1 ]] || { echo "error: hdiutil create failed" >&2; exit 1; }
+# the app inside the image must pass a strict check, as a user's Gatekeeper will run one
+mnt="$(hdiutil attach -nobrowse -readonly -noautoopen "$DMG" | tail -1 | cut -f3)"
+verify_rc=0
+codesign --verify --strict --deep --verbose=2 "$mnt/VibezCut.app" || verify_rc=$?
+hdiutil detach "$mnt" -quiet || hdiutil detach "$mnt" -force -quiet || true
+[[ "$verify_rc" = 0 ]] || { echo "error: VibezCut.app in the DMG fails a strict signature check" >&2; exit 1; }
 sign "$DMG"
 codesign --verify --strict --verbose=2 "$DMG"
 if [[ "$NOTARIZE" = 1 ]]; then
