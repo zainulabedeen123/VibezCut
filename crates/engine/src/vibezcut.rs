@@ -108,15 +108,18 @@ pub fn check_for_updates_now() {
     }
     let started = CHECK_HOOK.get().is_some_and(|h| h());
     if !started && update_ready().is_none() {
-        set_update_state(UpdateState::Unavailable(
-            "This copy can't update itself. Install VibezCut with VibezCut-win-Setup.exe to get automatic updates.".into(),
-        ));
+        let how = if cfg!(target_os = "windows") {
+            "Install VibezCut with VibezCut-win-Setup.exe to get automatic updates.".to_string()
+        } else {
+            format!("Download the latest VibezCut from {REPOSITORY}/releases.")
+        };
+        set_update_state(UpdateState::Unavailable(format!("This copy can't update itself. {how}")));
     }
 }
 
 // ------------------------------------------------------------------ Claude link
 //
-// The desktop app (`apps/filmcraft/src/claude_link.rs`, Windows) keeps one VibezCut window linked
+// The desktop app (`apps/filmcraft/src/claude_link.rs`) keeps one VibezCut window linked
 // to Claude: it holds the local control port the `filmcraft-studio` MCP server talks to. It reports
 // the link here; the UI shows it (header badge, window glow, title) and "Connect Claude to This
 // Window" asks for it through the claim hook.

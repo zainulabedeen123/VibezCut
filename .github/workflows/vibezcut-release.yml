@@ -1,8 +1,13 @@
-name: VibezCut release (Windows)
+name: VibezCut release (Windows + macOS)
 
 # Tag a version to publish a release:   git tag vibezcut-v0.1.0 && git push origin vibezcut-v0.1.0
 # (plain v* tags are FilmCraft's own releases, kept in the history for upstream merges)
-# Or run it by hand (Actions > VibezCut release > Run workflow) to get a build artifact only.
+# Or run it by hand (Actions > VibezCut release > Run workflow) to get build artifacts only.
+#
+# macOS signing is optional. Without these repository secrets the app is ad-hoc signed: it runs, but
+# on first launch macOS asks the user to allow it (System Settings > Privacy & Security > Open Anyway).
+#   APPLE_CERTIFICATE (base64 Developer ID Application .p12), APPLE_CERTIFICATE_PASSWORD,
+#   APPLE_ID, APPLE_PASSWORD (app-specific password), APPLE_TEAM_ID   -> signed + notarized DMG
 on:
   push:
     tags: ["vibezcut-v*"]
@@ -12,6 +17,16 @@ on:
         description: "Version label for a manual build (no release is published)"
         required: false
         default: "0.0.0-manual"
+      platforms:
+        description: "Which builds to run"
+        type: choice
+        options: [all, windows, macos]
+        default: all
+      macos_runner:
+        description: "macOS runner (macos-15-intel cross-compiles the arm64 half; use it when arm64 runners are queued)"
+        type: choice
+        options: [macos-15, macos-15-intel]
+        default: macos-15
 
 permissions:
   contents: write
@@ -22,6 +37,7 @@ concurrency:
 
 jobs:
   windows-x64:
+    if: github.event_name != 'workflow_dispatch' || inputs.platforms != 'macos'
     runs-on: windows-latest
     timeout-minutes: 120
     env:
@@ -110,3 +126,91 @@ jobs:
           files: |
             dist/vibezcut/*.zip
             dist/vibezcut/*.sha256
+
+  macos-universal:
+    if: github.event_name != 'workflow_dispatch' || inputs.platforms != 'windows'
+    runs-on: ${{ inputs.macos_runner || 'macos-15' }}
+    timeout-minutes: 150
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: "0"
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then v="${GITHUB_REF_NAME#vibezcut-v}"; else v="${{ inputs.version }}"; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "VibezCut $v"
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: vibezcut-macos-universal
+
+      - name: Signing certificate (optional)
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: bash packaging/macos/import-cert.sh
+
+      - name: Build and package
+        shell: bash
+        env:
+          VIBEZCUT_VERSION: ${{ steps.ver.outputs.version }}
+          FILMCRAFT_BUILD_SHA: ${{ github.sha }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bash packaging/vibezcut/package-macos.sh --version "$VIBEZCUT_VERSION" --arch universal
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          app="target/vibezcut-macos/VibezCut.app"
+          "$app/Contents/MacOS/vibezcut-cli" --version
+          lipo -info "$app/Contents/MacOS/VibezCut"
+
+      - name: Smoke test (headless render)
+        continue-on-error: true   # the CPU path should render even without a usable GPU
+        shell: bash
+        run: |
+          app="target/vibezcut-macos/VibezCut.app"
+          "$app/Contents/MacOS/vibezcut-cli" --demo render --seconds 1 --out smoke.png --scale 0.25
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VibezCut-${{ steps.ver.outputs.version }}-macos-universal
+          path: |
+            dist/vibezcut/*.dmg
+            dist/vibezcut/*.dmg.sha256
+
+  # The Windows job creates the GitHub release (Velopack); the DMG is attached once it exists.
+  attach-macos:
+    if: github.ref_type == 'tag'
+    needs: [windows-x64, macos-universal]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: VibezCut-${{ needs.macos-universal.outputs.version }}-macos-universal
+          path: mac
+
+      - name: Attach the macOS DMG to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            mac/*.dmg
+            mac/*.dmg.sha256

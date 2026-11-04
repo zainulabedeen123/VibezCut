@@ -40,10 +40,11 @@ def model():
     global _model
     if _model is None:
         s = config.settings()
-        if s["device"] == "cuda":
+        dev = config.device()
+        if dev == "cuda":
             _preload_torch_cudnn()
         from faster_whisper import WhisperModel
-        _model = WhisperModel(s["whisper_model"], device=s["device"], compute_type="float16" if s["device"] == "cuda" else "int8")
+        _model = WhisperModel(s["whisper_model"], device=dev, compute_type="float16" if dev == "cuda" else "int8")
     return _model
 
 

@@ -1,22 +1,23 @@
-//! VibezCut ⇄ Claude (Windows): one VibezCut window at a time is the one Claude works with.
+//! VibezCut ⇄ Claude (Windows, macOS, Linux): one VibezCut window at a time is the one Claude works with.
 //!
 //! * That window listens on 127.0.0.1:9876, the control channel the `filmcraft-studio` MCP
 //!   server talks to, with a fresh 64-hex token per hold, written to
-//!   `%USERPROFILE%\.filmcraft-studio\control.token` (the MCP server reads it there). Every request
+//!   `~/.filmcraft-studio/control.token` (`%USERPROFILE%` on Windows; the MCP server reads it there). Every request
 //!   must carry the token (`control_server::serve_custom`).
 //! * Other windows wait: when the holder closes, the next one takes the port within a couple of
 //!   seconds. "Connect Claude to This Window" ([`vibezcut::claim_claude`]) writes a claim file with
 //!   this process id; the holder sees it, lets go, and the claimer takes the port.
 //! * A Claude conversation that works with VibezCut keeps one connection open and says
 //!   `vibezcut.attach` on it (then `vibezcut.ping` every few seconds). While such a connection is
-//!   open the window shows "connected to Claude": header badge, window glow, title, and a Claude
-//!   dot on its taskbar button. When the conversation ends its process exits, the connection
+//!   open the window shows "connected to Claude": header badge, window glow, title, and (Windows)
+//!   a Claude dot on its taskbar button. When the conversation ends its process exits, the connection
 //!   closes, and the indicators go away.
 //!
 //! `VIBEZCUT_NO_CLAUDE=1` turns the link off. A window started with `--control PORT` uses the
 //! plain control server instead.
 
 use filmcraft_engine::vibezcut::{self, ClaudeLink};
+#[cfg(windows)]
 use filmcraft_platform::taskbar_overlay::TaskbarOverlay;
 use filmcraft_ui_egui::ControlRequest;
 use serde_json::{Value, json};
@@ -42,7 +43,10 @@ pub fn start(ctx: egui::Context) -> Option<Receiver<ControlRequest>> {
         log::info!("claude: link off (VIBEZCUT_NO_CLAUDE)");
         return None;
     }
-    let dir = std::env::var_os("USERPROFILE").filter(|v| !v.is_empty()).map(|h| PathBuf::from(h).join(".filmcraft-studio"))?;
+    let Some(dir) = state_dir() else {
+        log::warn!("claude: link off (no home folder for the control token)");
+        return None;
+    };
     let (tx, rx) = channel();
     let claim_dir = dir.clone();
     vibezcut::set_claim_hook(Box::new(move || {
@@ -58,6 +62,26 @@ pub fn start(ctx: egui::Context) -> Option<Receiver<ControlRequest>> {
         vibezcut::set_claude_link(ClaudeLink::Off, 0);
     }
     Some(rx)
+}
+
+/// `~/.filmcraft-studio`, where the MCP server (`studio/studio/config.py: state_dir`) looks for the
+/// token: Python's `Path.home()` is `%USERPROFILE%` on Windows and `$HOME` elsewhere.
+fn state_dir() -> Option<PathBuf> {
+    let var = if cfg!(windows) { "USERPROFILE" } else { "HOME" };
+    std::env::var_os(var).filter(|v| !v.is_empty()).map(|h| PathBuf::from(h).join(".filmcraft-studio"))
+}
+
+/// The taskbar badge exists on Windows only; elsewhere the header badge, glow and title show the link.
+#[cfg(not(windows))]
+struct TaskbarOverlay;
+
+#[cfg(not(windows))]
+impl TaskbarOverlay {
+    fn new() -> Self {
+        Self
+    }
+
+    fn show(&mut self, _on: bool) {}
 }
 
 fn run(dir: &Path, tx: &Sender<ControlRequest>, ctx: &egui::Context) {

@@ -1388,7 +1388,8 @@ mod frame_export_tests;
 #[cfg(test)]
 mod wasm_clock_tests;
 
-/// VibezCut: register the fonts bundled with the app (the `fonts` folder next to the executable,
+/// VibezCut: register the fonts bundled with the app (the `fonts` folder next to the executable or,
+/// in a macOS bundle, in `Contents/Resources`,
 /// and `VIBEZCUT_FONTS_DIR` when set) before anything renders text, so captions and titles look the
 /// same on every installation. Returns the number of faces added (families already known are kept).
 pub fn load_bundled_fonts() -> usize {
@@ -1398,6 +1399,8 @@ pub fn load_bundled_fonts() -> usize {
     }
     if let Some(exe_dir) = std::env::current_exe().ok().and_then(|p| p.parent().map(std::path::Path::to_path_buf)) {
         dirs.push(exe_dir.join("fonts"));
+        // macOS app bundle: the executables are in Contents/MacOS, the fonts in Contents/Resources
+        dirs.push(exe_dir.join("..").join("Resources").join("fonts"));
     }
     dirs.retain(|d| d.is_dir());
     if dirs.is_empty() {
