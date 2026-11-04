@@ -22,6 +22,11 @@ on:
         type: choice
         options: [all, windows, macos]
         default: all
+      macos_runner:
+        description: "macOS runner (macos-15-intel cross-compiles the arm64 half; use it when arm64 runners are queued)"
+        type: choice
+        options: [macos-15, macos-15-intel]
+        default: macos-15
 
 permissions:
   contents: write
@@ -124,7 +129,7 @@ jobs:
 
   macos-universal:
     if: github.event_name != 'workflow_dispatch' || inputs.platforms != 'windows'
-    runs-on: macos-15
+    runs-on: ${{ inputs.macos_runner || 'macos-15' }}
     timeout-minutes: 150
     env:
       CARGO_TERM_COLOR: always
