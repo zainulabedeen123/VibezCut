@@ -26,6 +26,41 @@ py -3 -m pip install faster-whisper "numpy<2" pillow "mcp>=1.16,<2"
 and **ffmpeg** on PATH (`winget install Gyan.FFmpeg`). Restart VibezCut and Claude: when a Python with
 these packages is found, VibezCut uses it instead of the bundled one.
 
+## On a Mac
+
+1. **Claude Code**: install it and sign in (https://claude.com/claude-code).
+2. **VibezCut**: download `VibezCut-<version>-macos-universal.dmg` from the latest release (one app for
+   Apple silicon and Intel Macs, macOS 11 Big Sur or later), open it and drag **VibezCut** onto
+   **Applications**. Until the app is signed with an Apple Developer ID, macOS stops the first launch:
+   open System Settings > Privacy & Security and click **Open Anyway** (or right-click VibezCut >
+   Open). If macOS says the app "is damaged", remove the download quarantine once:
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/VibezCut.app
+   ```
+3. **Claude tools** (the Mac app has no private Python and does not register them itself yet): with
+   Python 3.12 (`brew install python@3.12`), install the packages and register the MCP server for your user:
+   ```bash
+   python3.12 -m pip install --user "mcp>=1.16,<2" "numpy<2" pillow
+   ```
+   ```bash
+   claude mcp add --scope user filmcraft-studio -- "$(command -v python3.12)" /Applications/VibezCut.app/Contents/Resources/studio/run_server.py
+   ```
+   ```bash
+   mkdir -p ~/.claude/skills && cp -R /Applications/VibezCut.app/Contents/Resources/claude-skill/* ~/.claude/skills/
+   ```
+   `claude mcp get filmcraft-studio` should say Connected.
+
+Every start of VibezCut is ready for Claude to edit live, the same as on Windows: the header badge and window
+glow show when a conversation is connected (there is no Dock badge yet). Use
+**Window > Connect Claude to This Window** to pick a window when several are open.
+
+**Transcription add-on on a Mac** (cutting raw recordings): `python3.12 -m pip install --user torch torchaudio faster-whisper`
+and `brew install ffmpeg`. There is no NVIDIA GPU, so Whisper runs on the CPU: expect a long
+recording to take several times longer than on a Windows PC with an NVIDIA card.
+
+**Updates on a Mac** are not automatic yet: Help > Check for Updates points to the releases page;
+download the new DMG and replace the app in Applications.
+
 ## When you receive a project
 
 You get a zip. Unzip it anywhere, then:
@@ -54,6 +89,8 @@ saving first). If you choose Later, it installs on the next start. Claude's skil
 updated with it.
 
 ## Uninstall
+
+Mac: drag VibezCut from Applications to the Trash, then `claude mcp remove --scope user filmcraft-studio`.
 
 Windows Settings > Apps > VibezCut > Uninstall. It also removes the Claude skill and the MCP server
 registration. Your projects and media are never touched.

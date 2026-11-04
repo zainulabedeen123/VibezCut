@@ -9,12 +9,13 @@ ROOT = Path(__file__).resolve().parent.parent          # <repo>/studio
 REPO = ROOT.parent
 _CFG = ROOT / "studio.json"                             # per-machine settings, not committed
 _DEFAULTS = {
-    # folder holding filmcraft.exe and filmcraft-cli.exe; empty = this repo's own build
+    # folder holding the editor and CLI binaries (on macOS: VibezCut.app/Contents/MacOS);
+    # empty = found automatically (release zip / app bundle / this repo's own build)
     "filmcraft_home": "",
     "control_port": 9876,
     "fps": 60,
     "whisper_model": "large-v3-turbo",
-    "device": "cuda",
+    "device": "auto",   # "auto" = cuda when an NVIDIA GPU is usable, else cpu (macOS); or "cuda" / "cpu"
 }
 
 
@@ -27,8 +28,9 @@ def settings() -> dict:
     return s
 
 
-APP_NAMES = ("VibezCut.exe", "filmcraft.exe")
-CLI_NAMES = ("vibezcut-cli.exe", "filmcraft-cli.exe")
+# Windows names first; macOS / Linux binaries have no extension (in VibezCut.app: Contents/MacOS)
+APP_NAMES = ("VibezCut.exe", "filmcraft.exe", "VibezCut", "filmcraft")
+CLI_NAMES = ("vibezcut-cli.exe", "filmcraft-cli.exe", "vibezcut-cli", "filmcraft-cli")
 
 
 def _first(folder: Path, names) -> Path | None:
@@ -41,7 +43,16 @@ def home() -> Path:
     h = settings()["filmcraft_home"]
     if h:
         return Path(h)
-    for cand in (REPO, REPO / "target" / "x86_64-pc-windows-msvc" / "release", REPO / "target" / "release", REPO / "dist"):
+    cands = (
+        REPO,                                   # Windows zip: binaries next to studio/
+        REPO.parent / "MacOS",                  # macOS: VibezCut.app/Contents/Resources/studio
+        Path("/Applications/VibezCut.app/Contents/MacOS"),
+        Path.home() / "Applications" / "VibezCut.app" / "Contents" / "MacOS",
+        REPO / "target" / "x86_64-pc-windows-msvc" / "release",
+        REPO / "target" / "release",
+        REPO / "dist",
+    )
+    for cand in cands:
         if _first(cand, CLI_NAMES):
             return cand
     raise FileNotFoundError("VibezCut binaries not found: build the repo (cargo build --release) "
@@ -54,6 +65,32 @@ def cli() -> Path:
 
 def app() -> Path:
     return _first(home(), APP_NAMES) or home() / APP_NAMES[0]
+
+
+_DEVICE: str | None = None
+
+
+def device() -> str:
+    """The compute device for Whisper and forced alignment: "cuda" or "cpu". "auto" (and "cuda" on a
+    machine without a usable NVIDIA GPU, e.g. a Mac) resolve to "cpu"."""
+    global _DEVICE
+    if _DEVICE is None:
+        want = str(settings().get("device", "auto")).lower()
+        _DEVICE = "cpu" if want == "cpu" else ("cuda" if _cuda_available() else "cpu")
+    return _DEVICE
+
+
+def _cuda_available() -> bool:
+    try:
+        import torch
+        return bool(torch.cuda.is_available())
+    except Exception:
+        pass
+    try:
+        import ctranslate2
+        return ctranslate2.get_cuda_device_count() > 0
+    except Exception:
+        return False
 
 
 def control_port() -> int:

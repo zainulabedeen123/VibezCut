@@ -28,7 +28,6 @@ mod appearance;
 mod args;
 mod audio;
 mod audio_in;
-#[cfg(windows)]
 mod claude_link;
 mod control_server;
 #[cfg(target_os = "linux")]
@@ -369,7 +368,6 @@ fn app_creator(launch: Launch, graphics: graphics::GraphicsStart, created: Arc<A
             app = if control_input_only { app.with_control_input_only(rx) } else { app.with_control(rx) };
         }
         // VibezCut: every normal start can work with Claude (no special launcher needed).
-        #[cfg(windows)]
         if control_port.is_none()
             && let Some(rx) = claude_link::start(cc.egui_ctx.clone())
         {

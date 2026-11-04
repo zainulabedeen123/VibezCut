@@ -168,21 +168,22 @@ class Resolver:
         import torch
         import torchaudio.functional as F
         from torchaudio.pipelines import MMS_FA as bundle
+        dev = config.device()
         if self._mms is None:
-            self._mms = (bundle.get_model().to("cuda").eval(), bundle.get_dict())
+            self._mms = (bundle.get_model().to(dev).eval(), bundle.get_dict())
         model, D = self._mms
-        x = torch.from_numpy(self.a[int(R0 * SR):int(R1 * SR)]).to("cuda")[None]
+        x = torch.from_numpy(self.a[int(R0 * SR):int(R1 * SR)]).to(dev)[None]
         with torch.inference_mode():
             em, _ = model(x)
             em = torch.log_softmax(em, dim=-1)
-        em = torch.cat([em, torch.zeros(1, em.size(1), 1, device="cuda")], dim=2)
+        em = torch.cat([em, torch.zeros(1, em.size(1), 1, device=dev)], dim=2)
         ws = words_for_align(text)
         toks, lens = [len(D)], []
         for w in ws:
             cs = [D[c] for c in w if c in D]
             lens.append(len(cs))
             toks += cs
-        ali, sc = F.forced_align(em, torch.tensor([toks], dtype=torch.int32, device="cuda"), blank=0)
+        ali, sc = F.forced_align(em, torch.tensor([toks], dtype=torch.int32, device=dev), blank=0)
         spans = F.merge_tokens(ali[0], sc[0])
         ratio = (R1 - R0) / em.size(1)
         out, k = [], 1

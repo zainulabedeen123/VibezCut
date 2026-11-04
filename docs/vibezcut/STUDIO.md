@@ -58,10 +58,10 @@ up in the font list of the text tools; `packaging/vibezcut/bundle-fonts.ps1` fet
 
 ## Live editing
 
-On Windows every normal start of VibezCut can work with Claude (`apps/filmcraft/src/claude_link.rs`):
+On Windows, macOS and Linux every normal start of VibezCut can work with Claude (`apps/filmcraft/src/claude_link.rs`):
 
 - One window at a time holds 127.0.0.1:9876 with a fresh 64-hex token, written to
-  `%USERPROFILE%\.filmcraft-studio\control.token` (the MCP server reads it there, again after a refusal).
+  `~/.filmcraft-studio/control.token` (`%USERPROFILE%` on Windows) (the MCP server reads it there, again after a refusal).
   When that window closes the next one takes over; Window > Connect Claude to This Window (or the header
   badge) writes a claim file and the holder hands over.
 - A conversation keeps one connection open (`fc.keep_attached`: `vibezcut.attach`, then `vibezcut.ping`
@@ -86,7 +86,12 @@ On Windows every normal start of VibezCut can work with Claude (`apps/filmcraft/
 - Local: `pwsh packaging/vibezcut/package.ps1 -Version 0.1.0` builds `VibezCut.exe` and
   `vibezcut-cli.exe` (static CRT) and writes `dist/vibezcut/VibezCut-<version>-windows-x64.zip`
   (+ `.sha256`): editor, CLI, launcher, `studio/`, docs, the Claude skill and the licenses.
-- CI: `.github/workflows/vibezcut-release.yml`. Push a tag (`git tag vibezcut-v0.1.0 && git push origin vibezcut-v0.1.0`; plain `v*` tags are FilmCraft's)
+- macOS (on a Mac with Xcode command line tools, Rust and pwsh): `packaging/vibezcut/package-macos.sh --version 0.1.0`
+  builds a universal (Apple silicon + Intel) `VibezCut.app` and writes `dist/vibezcut/VibezCut-<version>-macos-universal.dmg`
+  (+ `.sha256`). The studio, docs, Claude skills and caption fonts live in `VibezCut.app/Contents/Resources`, both
+  binaries in `Contents/MacOS`. Ad-hoc signed unless `MACOS_SIGN_IDENTITY` (and `APPLE_ID` / `APPLE_PASSWORD` /
+  `APPLE_TEAM_ID` for notarization) are set. On macOS there is no Velopack updater and no bundled Python yet.
+- CI: `.github/workflows/vibezcut-release.yml` (Windows and macOS jobs; manual runs can pick one platform). Push a tag (`git tag vibezcut-v0.1.0 && git push origin vibezcut-v0.1.0`; plain `v*` tags are FilmCraft's)
   and GitHub Actions builds on Windows, smoke-tests the CLI and publishes a GitHub Release with the zip.
   "Run workflow" by hand gives a build artifact without a release.
 - Installer and auto-update (Velopack): CI also runs `vpk pack` and `vpk upload github`, so every
